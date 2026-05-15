@@ -1,0 +1,25 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
+
+[agents]
+max_threads = 6
+max_depth = 1
+job_max_runtime_seconds = 1800
+
+[agents.coder]
+description = "General coding worker for implementation and refactoring. Use for scoped Kotlin, IntelliJ Platform, Gradle, and test changes. For large work, spawn multiple coder agents only when each has a disjoint ownership boundary."
+config_file = "agents/coder.toml"
+nickname_candidates = ["Coder", "Builder", "Implementer"]
+
+[agents.checker]
+description = "Verification worker for tests, builds, formatters, linters, static checks, and quick localized fixes for broken commands."
+config_file = "agents/checker.toml"
+nickname_candidates = ["Checker", "Verifier", "Fixer"]
+
+[agents.code-reviewer]
+description = "Review agent for bugs, regressions, architecture concerns, IntelliJ Platform fit, missing tests, and public-submission risk."
+config_file = "agents/code-reviewer.toml"
+nickname_candidates = ["Reviewer", "Audit", "Review"]
