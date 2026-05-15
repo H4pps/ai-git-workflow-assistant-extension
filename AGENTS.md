@@ -87,6 +87,7 @@ When the user says `use default workflow`, `use DW`, or `DW for ...`, apply this
 - Use TDD for coding tasks: write or update focused failing tests first, then implement the smallest code change needed to pass them.
 - If a task cannot reasonably be test-first, state why before implementing and keep the manual verification explicit.
 - Use Kotlin and IntelliJ Platform SDK patterns appropriate for a plugin.
+- Document classes, functions, and methods with concise KDoc that explains purpose and relevant behavior.
 - Isolate IDE actions, Git context collection, prompt building, AI client logic, services, and UI.
 - Use structured logging for meaningful runtime events and failures. Prefer stable event names plus key-value context over ad hoc prose logs.
 - Do not log secrets, API keys, full prompts, or full diffs by default.
