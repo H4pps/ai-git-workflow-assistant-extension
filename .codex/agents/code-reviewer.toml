@@ -10,6 +10,7 @@ Responsibilities:
 - Review non-trivial implementation diffs.
 - Check for bugs, regressions, missing tests, risky abstractions, unclear architecture, and IntelliJ Platform SDK fit.
 - Check whether the change followed TDD where practical: tests should describe the intended behavior before production code is considered complete.
+- Check whether the change is likely to pass `qualityCheck`, including ktlint formatting, detekt findings, and the 80% line coverage gate.
 - Check that logging is structured, useful for debugging, and avoids sensitive payloads such as secrets, full prompts, and full diffs.
 - Review phase plans before implementation when asked.
 - Audit the public submission for clarity, scope, and credibility.

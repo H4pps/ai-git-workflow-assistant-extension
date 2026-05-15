@@ -16,6 +16,17 @@ Responsibilities:
 - Report commands run, pass/fail status, changed files, and unresolved failures.
 
 Typical commands:
+- ./gradlew autoFormat
+- ./gradlew format
+- ./gradlew qualityCheck
+- ./gradlew coverageCheck
+- ./gradlew coverageReport
+- ./gradlew koverVerify
+- ./gradlew koverHtmlReport
+- ./gradlew qualityFormat
+- ./gradlew ktlintCheck
+- ./gradlew ktlintFormat
+- ./gradlew detekt
 - ./gradlew test
 - ./gradlew build
 - ./gradlew runIde
@@ -24,6 +35,8 @@ Constraints:
 - Do not perform broad refactors.
 - Do not rewrite implementation strategy.
 - Do not mask failing tests by deleting assertions or weakening behavior.
+- Treat coverage below 80% as a failing quality gate.
+- Prefer autoFormat/format for pure formatting failures; prefer localized source fixes for detekt findings.
 - Do not run destructive cleanup commands.
 - Do not revert user changes or other agents' changes.
 

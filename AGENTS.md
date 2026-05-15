@@ -83,6 +83,7 @@ When the user says `use default workflow`, `use DW`, or `DW for ...`, apply this
 
 - Prefer existing repository style over new abstractions.
 - Keep the MVP small and explainable.
+- Write very minimal but high-quality code: direct, readable, testable, and only abstracted when it removes real complexity.
 - Use TDD for coding tasks: write or update focused failing tests first, then implement the smallest code change needed to pass them.
 - If a task cannot reasonably be test-first, state why before implementing and keep the manual verification explicit.
 - Use Kotlin and IntelliJ Platform SDK patterns appropriate for a plugin.
@@ -97,6 +98,15 @@ When the user says `use default workflow`, `use DW`, or `DW for ...`, apply this
 
 - Treat tests as part of the implementation, not as a final cleanup step.
 - Run focused tests after non-trivial Kotlin changes.
+- Run `./gradlew autoFormat` to apply the repository auto-formatter.
+- Run `./gradlew qualityCheck` before completing non-trivial implementation work.
+- Coverage must stay at or above 80% line coverage.
+- Use `./gradlew coverageCheck` or `./gradlew koverVerify` for coverage verification.
+- Use `./gradlew coverageReport` to generate HTML/XML coverage reports.
+- Run `./gradlew qualityFormat` when Kotlin formatting is the issue or before a final check if style violations are reported.
+- Use `./gradlew detekt` for static analysis/code smell checks.
+- Use `./gradlew ktlintCheck` for Kotlin formatting/lint verification.
+- Use `./gradlew ktlintFormat` only when automatic formatting is appropriate.
 - Run Gradle build or plugin verification steps when project setup changes.
 - Record verification commands and outcomes in the final response.
 - If a check cannot be run, explain why and state the residual risk.
