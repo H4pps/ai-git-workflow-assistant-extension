@@ -1,0 +1,21 @@
+<idea-plugin>
+    <id>dev.happs.ai-git-workflow-assistant</id>
+    <name>AI Git Workflow Assistant</name>
+    <vendor email="juriy.bulanov@gmail.com" url="https://github.com/h4pps">happs</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+    <actions>
+        <group id="AiGitWorkflowAssistant.Group"
+               text="AI Git Workflow Assistant"
+               description="AI-assisted Git workflow tools"
+               popup="true">
+            <add-to-group group-id="Vcs.Operations.Popup" anchor="last"/>
+            <action id="AiGitWorkflowAssistant.ShowPlaceholder"
+                    class="dev.happs.aigitassistant.action.ShowAssistantPlaceholderAction"
+                    text="Open Assistant"
+                    description="Open the AI Git Workflow Assistant placeholder"/>
+        </group>
+    </actions>
+</idea-plugin>

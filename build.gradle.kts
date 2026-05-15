@@ -1,23 +1,29 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
-    kotlin("jvm") version "2.3.20"
-    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    id("dev.detekt") version "2.0.0-alpha.3"
-    id("org.jetbrains.kotlinx.kover") version "0.9.8"
+    kotlin("jvm")
+    id("org.jetbrains.intellij.platform")
+    id("org.jlleitschuh.gradle.ktlint")
+    id("dev.detekt")
+    id("org.jetbrains.kotlinx.kover")
 }
 
-group = "org.example"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
+group = "dev.happs"
+version = "0.1.0"
 
 dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity("2025.2.6.2")
+        bundledPlugin("Git4Idea")
+        testFramework(TestFrameworkType.Platform)
+    }
+
     testImplementation(kotlin("test"))
+    testRuntimeOnly("junit:junit:4.13.2")
 }
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 ktlint {
@@ -35,15 +41,20 @@ detekt {
 }
 
 tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
-    jvmTarget.set("25")
+    jvmTarget.set("21")
 }
 
 tasks.withType<dev.detekt.gradle.DetektCreateBaselineTask>().configureEach {
-    jvmTarget.set("25")
+    jvmTarget.set("21")
 }
 
 kover {
     reports {
+        filters {
+            excludes {
+                classes("dev.happs.aigitassistant.action.*")
+            }
+        }
         total {
             html {
                 onCheck = true
@@ -56,6 +67,22 @@ kover {
             rule("Minimum line coverage") {
                 minBound(80)
             }
+        }
+    }
+}
+
+intellijPlatform {
+    pluginConfiguration {
+//        name = "AI Git Workflow Assistant"
+        version = project.version.toString()
+        description =
+            """
+            AI Git Workflow Assistant is a small IntelliJ Platform plugin that will help developers
+            prepare Git changes with AI-assisted commit messages, branch names, and change summaries.
+            """.trimIndent()
+
+        ideaVersion {
+            sinceBuild = "252"
         }
     }
 }
