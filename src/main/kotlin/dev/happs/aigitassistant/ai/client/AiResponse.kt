@@ -16,4 +16,5 @@ data class AiResponse(
  */
 enum class AiResponseSource {
     DETERMINISTIC,
+    OPENAI_COMPATIBLE,
 }

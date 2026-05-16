@@ -18,6 +18,7 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
     }
 
+    implementation("com.google.code.gson:gson:2.13.1")
     testImplementation(kotlin("test"))
     testRuntimeOnly("junit:junit:4.13.2")
 }
