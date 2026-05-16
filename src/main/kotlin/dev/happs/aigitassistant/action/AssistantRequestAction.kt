@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.wm.ToolWindowManager
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
 import dev.happs.aigitassistant.ui.GitAssistantToolWindowFactory
 

@@ -1,6 +1,6 @@
 package dev.happs.aigitassistant.action
 
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 
 /**
  * Generates an editable commit message from current Git changes.
