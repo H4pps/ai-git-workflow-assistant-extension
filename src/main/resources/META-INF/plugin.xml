@@ -9,6 +9,12 @@
     <resource-bundle>messages.AiGitWorkflowAssistantBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="dev.happs.aigitassistant.settings.AiProviderSettingsService"/>
+        <applicationConfigurable id="dev.happs.aigitassistant.settings.AiProviderSettingsConfigurable"
+                                 parentId="tools"
+                                 displayName="AI Git Workflow Assistant"
+                                 instance="dev.happs.aigitassistant.settings.AiProviderSettingsConfigurable"/>
+        <projectService serviceImplementation="dev.happs.aigitassistant.service.GitAssistantService"/>
         <projectService serviceImplementation="dev.happs.aigitassistant.service.GitAssistantToolWindowService"/>
         <toolWindow id="AI Git"
                     anchor="right"

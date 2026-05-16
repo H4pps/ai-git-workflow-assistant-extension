@@ -1,14 +1,13 @@
 package dev.happs.aigitassistant.service
 
 import com.intellij.openapi.project.Project
-import dev.happs.aigitassistant.ai.client.AiClient
-import dev.happs.aigitassistant.ai.client.DeterministicAiClient
-import dev.happs.aigitassistant.ai.client.LoggingAiClient
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextCollector
 import dev.happs.aigitassistant.prompt.AssistantOptions
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.prompt.PromptBuilder
+import dev.happs.aigitassistant.service.ai.AiClientProvider
+import dev.happs.aigitassistant.service.ai.DefaultAiClientProvider
 
 /**
  * Coordinates Git context, prompt construction, and AI response generation.
@@ -16,7 +15,7 @@ import dev.happs.aigitassistant.prompt.PromptBuilder
 class GitAssistantService(
     private val gitContextCollector: GitContextCollector = GitContextCollector(),
     private val promptBuilder: PromptBuilder = PromptBuilder(),
-    private val aiClient: AiClient = LoggingAiClient(DeterministicAiClient()),
+    private val aiClientProvider: AiClientProvider = DefaultAiClientProvider(),
 ) {
     /**
      * Collects Git context from [project] and generates a display-ready result.
@@ -34,7 +33,7 @@ class GitAssistantService(
         options: AssistantOptions,
     ): GitAssistantResult {
         val request = promptBuilder.build(context, options)
-        val response = aiClient.generate(request)
+        val response = aiClientProvider.currentClient().generate(request)
         return GitAssistantResult(
             title = titleFor(options.requestKind),
             generatedText = response.generatedText,

@@ -1,20 +1,28 @@
 package dev.happs.aigitassistant.service
 
 import com.intellij.openapi.project.Project
+import dev.happs.aigitassistant.ai.client.AiClient
+import dev.happs.aigitassistant.ai.client.AiResponse
 import dev.happs.aigitassistant.ai.client.AiResponseSource
+import dev.happs.aigitassistant.ai.client.DeterministicAiClient
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextCollector
 import dev.happs.aigitassistant.git.GitContextState
 import dev.happs.aigitassistant.git.GitRepositoryResolver
 import dev.happs.aigitassistant.prompt.AssistantOptions
+import dev.happs.aigitassistant.prompt.AssistantRequest
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.service.ai.AiClientProvider
 import java.lang.reflect.Proxy
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GitAssistantServiceTest {
-    private val service = GitAssistantService()
+    private val service =
+        GitAssistantService(
+            aiClientProvider = AiClientProvider { DeterministicAiClient() },
+        )
 
     @Test
     fun `generates display-ready commit message result`() {
@@ -74,7 +82,11 @@ class GitAssistantServiceTest {
                         override fun resolve(project: Project) = null
                     },
             )
-        val service = GitAssistantService(gitContextCollector = collector)
+        val service =
+            GitAssistantService(
+                gitContextCollector = collector,
+                aiClientProvider = AiClientProvider { DeterministicAiClient() },
+            )
 
         val result =
             service.generate(
@@ -86,6 +98,32 @@ class GitAssistantServiceTest {
         assertEquals(GitContextState.NO_REPOSITORY, result.gitState)
         assertEquals(0, result.changedFileCount)
         assertEquals(0, result.untrackedFileCount)
+    }
+
+    @Test
+    fun `uses resolved ai client when provider is overridden`() {
+        val customClient =
+            object : AiClient {
+                override fun generate(request: AssistantRequest): AiResponse =
+                    AiResponse(
+                        generatedText = "remote provider response",
+                        kind = request.kind,
+                        source = AiResponseSource.OPENAI_COMPATIBLE,
+                    )
+            }
+        val service =
+            GitAssistantService(
+                aiClientProvider = AiClientProvider { customClient },
+            )
+
+        val result =
+            service.generate(
+                context = changedContext(),
+                options = AssistantOptions(requestKind = AssistantRequestKind.CHANGE_SUMMARY),
+            )
+
+        assertEquals(AiResponseSource.OPENAI_COMPATIBLE, result.source)
+        assertEquals("remote provider response", result.generatedText)
     }
 
     private fun changedContext(): GitContext =
