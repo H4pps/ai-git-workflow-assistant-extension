@@ -5,17 +5,18 @@ import dev.happs.aigitassistant.ai.client.AiClient
 import dev.happs.aigitassistant.ai.client.AiResponse
 import dev.happs.aigitassistant.ai.client.AiResponseSource
 import dev.happs.aigitassistant.ai.client.DeterministicAiClient
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequest
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextCollector
 import dev.happs.aigitassistant.git.GitContextState
 import dev.happs.aigitassistant.git.GitRepositoryResolver
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequest
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.service.ai.AiClientProvider
 import java.lang.reflect.Proxy
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitAssistantServiceTest {
@@ -126,7 +127,45 @@ class GitAssistantServiceTest {
         assertEquals("remote provider response", result.generatedText)
     }
 
-    private fun changedContext(): GitContext =
+    @Test
+    fun `passes selected task and staged only scope to ai client`() {
+        var capturedRequest: AssistantRequest? = null
+        val customClient =
+            object : AiClient {
+                override fun generate(request: AssistantRequest): AiResponse {
+                    capturedRequest = request
+                    return AiResponse(
+                        generatedText = "branch-name",
+                        kind = request.kind,
+                        source = AiResponseSource.OPENAI_COMPATIBLE,
+                    )
+                }
+            }
+        val service =
+            GitAssistantService(
+                aiClientProvider = AiClientProvider { customClient },
+            )
+
+        val result =
+            service.generate(
+                context = changedContext(unstagedDiff = "diff --git a/Other.kt b/Other.kt\n+unstaged"),
+                options =
+                    AssistantOptions(
+                        requestKind = AssistantRequestKind.BRANCH_NAME,
+                        stagedOnly = true,
+                    ),
+            )
+        val request = requireNotNull(capturedRequest)
+
+        assertEquals(AssistantRequestKind.BRANCH_NAME, result.requestKind)
+        assertEquals(AssistantRequestKind.BRANCH_NAME, request.kind)
+        assertTrue(request.options.stagedOnly)
+        assertTrue(request.promptText.contains("reasoning_scope=STAGED_ONLY"))
+        assertFalse(request.promptText.contains("Other.kt"))
+        assertFalse(request.promptText.contains("+unstaged"))
+    }
+
+    private fun changedContext(unstagedDiff: String = ""): GitContext =
         GitContext(
             state = GitContextState.CHANGED,
             repositoryRoot = "/tmp/repo",
@@ -134,7 +173,7 @@ class GitAssistantServiceTest {
             changedFilePaths = listOf("src/main/kotlin/EditableDialog.kt"),
             untrackedFilePaths = emptyList(),
             stagedDiff = "diff --git a/EditableDialog.kt b/EditableDialog.kt\n+text area",
-            unstagedDiff = "",
+            unstagedDiff = unstagedDiff,
             stagedDiffTruncated = false,
             unstagedDiffTruncated = false,
         )

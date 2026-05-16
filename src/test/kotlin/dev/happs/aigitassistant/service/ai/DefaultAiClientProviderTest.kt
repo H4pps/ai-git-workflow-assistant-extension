@@ -4,11 +4,11 @@ import com.google.gson.Gson
 import com.sun.net.httpserver.HttpServer
 import dev.happs.aigitassistant.ai.client.AiClientException
 import dev.happs.aigitassistant.ai.client.AiResponseSource
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.PromptBuilder
 import dev.happs.aigitassistant.settings.AiCredentialStore
 import dev.happs.aigitassistant.settings.AiProviderSettings
 import dev.happs.aigitassistant.settings.AiProviderSettingsService

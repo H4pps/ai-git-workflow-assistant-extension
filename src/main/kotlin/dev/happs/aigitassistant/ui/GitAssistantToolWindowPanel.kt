@@ -12,9 +12,9 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.CommitMessageStyle
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
@@ -28,6 +28,7 @@ import javax.swing.BorderFactory
 import javax.swing.Box
 import javax.swing.BoxLayout
 import javax.swing.JButton
+import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -54,6 +55,7 @@ class GitAssistantToolWindowPanel(
             lineWrap = true
             wrapStyleWord = true
         }
+    private val stagedOnlyCheckBox = JCheckBox("Reason only from staged files")
     private val commitStyleSelector = ComboBox(CommitStyleOption.entries.toTypedArray())
     private val commitStylePanel = createCommitStylePanel()
     private val generateButton = JButton("Generate")
@@ -110,6 +112,10 @@ class GitAssistantToolWindowPanel(
         taskNoteTextArea.text = taskNote
     }
 
+    internal fun setStagedOnlyForTesting(stagedOnly: Boolean) {
+        stagedOnlyCheckBox.isSelected = stagedOnly
+    }
+
     internal fun selectCommitStyleForTesting(commitStyle: CommitMessageStyle) {
         commitStyleSelector.selectedItem = CommitStyleOption.from(commitStyle)
     }
@@ -146,6 +152,12 @@ class GitAssistantToolWindowPanel(
                 JBScrollPane(taskNoteTextArea).apply {
                     preferredSize = Dimension(JBUI.scale(NOTE_WIDTH), JBUI.scale(NOTE_HEIGHT))
                     maximumSize = Dimension(Int.MAX_VALUE, JBUI.scale(NOTE_HEIGHT))
+                    alignmentX = Component.LEFT_ALIGNMENT
+                },
+            )
+            add(Box.createVerticalStrut(JBUI.scale(CONTROL_GAP)))
+            add(
+                stagedOnlyCheckBox.apply {
                     alignmentX = Component.LEFT_ALIGNMENT
                 },
             )
@@ -209,6 +221,7 @@ class GitAssistantToolWindowPanel(
             requestKind = selectedRequestKind(),
             commitMessageStyle = selectedCommitStyle(),
             userNote = taskNoteTextArea.text,
+            stagedOnly = stagedOnlyCheckBox.isSelected,
         )
 
     private fun startGeneration() {
@@ -222,6 +235,7 @@ class GitAssistantToolWindowPanel(
         configureAiButton.isEnabled = !running
         requestKindSelector.isEnabled = !running
         commitStyleSelector.isEnabled = !running
+        stagedOnlyCheckBox.isEnabled = !running
     }
 
     private fun applyResult(result: GitAssistantResult) {

@@ -2,9 +2,9 @@ package dev.happs.aigitassistant.ui
 
 import com.intellij.openapi.project.Project
 import dev.happs.aigitassistant.ai.client.AiResponseSource
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
@@ -32,12 +32,14 @@ class GitAssistantToolWindowPanelTest {
         panel.selectRequestKind(AssistantRequestKind.COMMIT_MESSAGE)
         panel.selectCommitStyleForTesting(CommitMessageStyle.DETAILED)
         panel.setTaskNoteForTesting("  tighten output wording  ")
+        panel.setStagedOnlyForTesting(true)
 
         val options = panel.selectedOptionsForTesting()
 
         assertEquals(AssistantRequestKind.COMMIT_MESSAGE, options.requestKind)
         assertEquals(CommitMessageStyle.DETAILED, options.commitMessageStyle)
         assertEquals("tighten output wording", options.userNote)
+        assertTrue(options.stagedOnly)
         assertTrue(panel.isCommitStyleVisibleForTesting())
     }
 

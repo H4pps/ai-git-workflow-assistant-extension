@@ -1,6 +1,6 @@
 package dev.happs.aigitassistant.service
 
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

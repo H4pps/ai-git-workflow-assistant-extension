@@ -1,6 +1,6 @@
 package dev.happs.aigitassistant.service
 
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 
 /**
  * Holds cross-action tool window state, including pending task selection.

@@ -1,11 +1,11 @@
 package dev.happs.aigitassistant.service
 
 import com.intellij.openapi.project.Project
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextCollector
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.PromptBuilder
 import dev.happs.aigitassistant.service.ai.AiClientProvider
 import dev.happs.aigitassistant.service.ai.DefaultAiClientProvider
 

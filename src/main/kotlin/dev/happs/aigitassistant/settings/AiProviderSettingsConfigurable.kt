@@ -6,6 +6,10 @@ import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
+import com.intellij.util.ui.JBUI
+import java.awt.Component
+import javax.swing.Box
+import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -43,11 +47,8 @@ class AiProviderSettingsConfigurable(
                 .addLabeledComponent("Base URL:", baseUrl)
                 .addLabeledComponent("Model:", model)
                 .addLabeledComponent("API key:", apiKey)
+                .addComponent(createProviderLinksPanel())
                 .addComponent(
-                    HyperlinkLabel("OpenAI API keys").apply {
-                        setHyperlinkTarget(OPENAI_API_KEYS_URL)
-                    },
-                ).addComponent(
                     JLabel(
                         "OpenAI-compatible mode sends Git diffs, changed paths, and task notes to the configured API.",
                     ),
@@ -137,6 +138,24 @@ class AiProviderSettingsConfigurable(
         apiKeyField?.isEnabled = enabled
     }
 
+    private fun createProviderLinksPanel(): JComponent =
+        JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            alignmentX = Component.LEFT_ALIGNMENT
+            add(
+                HyperlinkLabel("OpenAI API keys").apply {
+                    setHyperlinkTarget(OPENAI_API_KEYS_URL)
+                },
+            )
+            add(Box.createHorizontalStrut(JBUI.scale(LINK_GAP)))
+            add(
+                HyperlinkLabel("OpenRouter free models").apply {
+                    setHyperlinkTarget(OPENROUTER_FREE_MODELS_URL)
+                },
+            )
+            add(Box.createHorizontalGlue())
+        }
+
     private enum class ProviderOption(
         val providerType: AiProviderType,
         private val label: String,
@@ -154,5 +173,7 @@ class AiProviderSettingsConfigurable(
 
     private companion object {
         const val OPENAI_API_KEYS_URL = "https://platform.openai.com/settings/organization/api-keys"
+        const val OPENROUTER_FREE_MODELS_URL = "https://openrouter.ai/collections/free-models"
+        const val LINK_GAP = 12
     }
 }

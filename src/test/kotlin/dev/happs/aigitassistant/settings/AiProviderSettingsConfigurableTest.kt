@@ -1,11 +1,25 @@
 package dev.happs.aigitassistant.settings
 
+import com.intellij.ui.HyperlinkLabel
+import java.awt.Component
+import java.awt.Container
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AiProviderSettingsConfigurableTest {
+    @Test
+    fun `settings links include openai keys and openrouter free models`() {
+        val component = configurable().createComponent()
+
+        val linkTexts = hyperlinkLabels(component).map { it.text }
+
+        assertContains(linkTexts, "OpenAI API keys")
+        assertContains(linkTexts, "OpenRouter free models")
+    }
+
     @Test
     fun `reset renders deterministic settings and disables openai fields`() {
         val configurable = configurable()
@@ -77,6 +91,13 @@ class AiProviderSettingsConfigurableTest {
         AiProviderSettingsConfigurable(
             settingsServiceProvider = { service },
         )
+
+    private fun hyperlinkLabels(component: Component): List<HyperlinkLabel> =
+        when (component) {
+            is HyperlinkLabel -> listOf(component)
+            is Container -> component.components.flatMap(::hyperlinkLabels)
+            else -> emptyList()
+        }
 
     private class InMemoryCredentialStore : AiCredentialStore {
         var savedApiKey: String? = null
