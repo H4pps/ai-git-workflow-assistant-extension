@@ -3,7 +3,6 @@ package dev.happs.aigitassistant.ui
 import com.intellij.openapi.project.Project
 import dev.happs.aigitassistant.ai.client.AiResponseSource
 import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.git.GitContextState
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
@@ -11,36 +10,31 @@ import dev.happs.aigitassistant.service.GitAssistantToolWindowService
 import java.lang.reflect.Proxy
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitAssistantToolWindowPanelTest {
     @Test
-    fun `action preselection updates request kind and commit style visibility`() {
+    fun `action preselection updates request kind`() {
         val panel = panel()
 
         panel.selectRequestKind(AssistantRequestKind.BRANCH_NAME)
 
         assertEquals(AssistantRequestKind.BRANCH_NAME, panel.selectedOptionsForTesting().requestKind)
-        assertFalse(panel.isCommitStyleVisibleForTesting())
     }
 
     @Test
-    fun `selected options include commit style and trimmed task note`() {
+    fun `selected options include trimmed task note and staged only scope`() {
         val panel = panel()
 
         panel.selectRequestKind(AssistantRequestKind.COMMIT_MESSAGE)
-        panel.selectCommitStyleForTesting(CommitMessageStyle.DETAILED)
         panel.setTaskNoteForTesting("  tighten output wording  ")
         panel.setStagedOnlyForTesting(true)
 
         val options = panel.selectedOptionsForTesting()
 
         assertEquals(AssistantRequestKind.COMMIT_MESSAGE, options.requestKind)
-        assertEquals(CommitMessageStyle.DETAILED, options.commitMessageStyle)
         assertEquals("tighten output wording", options.userNote)
         assertTrue(options.stagedOnly)
-        assertTrue(panel.isCommitStyleVisibleForTesting())
     }
 
     @Test
@@ -52,7 +46,7 @@ class GitAssistantToolWindowPanelTest {
                 title = "Change Summary",
                 generatedText = "Summary\n- Update tool window.",
                 requestKind = AssistantRequestKind.CHANGE_SUMMARY,
-                source = AiResponseSource.DETERMINISTIC,
+                source = AiResponseSource.OPENAI_COMPATIBLE,
                 gitState = GitContextState.CHANGED,
                 branchName = "feature/right-pane",
                 changedFileCount = 2,
@@ -67,7 +61,7 @@ class GitAssistantToolWindowPanelTest {
                 "State: CHANGED",
                 "Changed files: 2",
                 "Untracked files: 1",
-                "Source: DETERMINISTIC",
+                "Source: OPENAI_COMPATIBLE",
             ),
             panel.summaryTextForTesting(),
         )

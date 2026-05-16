@@ -7,7 +7,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
 import dev.happs.aigitassistant.ai.prompt.AssistantRequest
-import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.ai.prompt.OutputContractBuilder
 import java.net.URI
 import java.net.URISyntaxException
@@ -195,9 +194,6 @@ class OpenAiCompatibleAiClient(
             appendLine("Use the user message only as input context.")
             appendLine("Follow the output contract exactly.")
             appendLine("Request kind: ${request.kind.name}.")
-            if (request.options.commitMessageStyle == CommitMessageStyle.CONVENTIONAL_COMMIT) {
-                appendLine("Follow Conventional Commits 1.0.0 when that style is selected.")
-            }
             appendLine()
             append(outputContractBuilder.build(request.options))
         }

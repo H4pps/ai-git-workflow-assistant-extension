@@ -21,24 +21,23 @@ class AiProviderSettingsConfigurableTest {
     }
 
     @Test
-    fun `reset renders deterministic settings and disables openai fields`() {
+    fun `reset renders openai settings and keeps fields enabled`() {
         val configurable = configurable()
 
         configurable.createComponent()
         configurable.reset()
 
         assertFalse(configurable.isModified())
-        assertFalse(configurable.openAiFieldsEnabledForTesting())
+        assertTrue(configurable.openAiFieldsEnabledForTesting())
     }
 
     @Test
-    fun `apply stores openai provider settings and api key`() {
+    fun `apply stores openai settings and api key`() {
         val credentialStore = InMemoryCredentialStore()
         val service = AiProviderSettingsService(credentialStore = credentialStore)
         val configurable = configurable(service)
         configurable.createComponent()
 
-        configurable.selectProviderForTesting(AiProviderType.OPENAI_COMPATIBLE)
         configurable.setOpenAiFieldsForTesting(
             baseUrl = " https://llm.example.com/v1/ ",
             model = " custom-model ",
@@ -50,7 +49,6 @@ class AiProviderSettingsConfigurableTest {
 
         configurable.apply()
 
-        assertEquals(AiProviderType.OPENAI_COMPATIBLE, service.settings().provider)
         assertEquals("https://llm.example.com/v1", service.settings().openAiBaseUrl)
         assertEquals("custom-model", service.settings().openAiModel)
         assertEquals("sk-configurable", credentialStore.savedApiKey)
@@ -63,7 +61,6 @@ class AiProviderSettingsConfigurableTest {
         val service = AiProviderSettingsService(credentialStore = credentialStore)
         service.updateSettings(
             AiProviderSettings(
-                provider = AiProviderType.OPENAI_COMPATIBLE,
                 openAiBaseUrl = "https://configured.example.com/v1",
                 openAiModel = "configured-model",
             ),

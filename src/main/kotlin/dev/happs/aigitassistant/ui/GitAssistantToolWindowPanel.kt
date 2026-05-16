@@ -14,7 +14,6 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.JBUI
 import dev.happs.aigitassistant.ai.prompt.AssistantOptions
 import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
@@ -56,8 +55,6 @@ class GitAssistantToolWindowPanel(
             wrapStyleWord = true
         }
     private val stagedOnlyCheckBox = JCheckBox("Reason only from staged files")
-    private val commitStyleSelector = ComboBox(CommitStyleOption.entries.toTypedArray())
-    private val commitStylePanel = createCommitStylePanel()
     private val generateButton = JButton("Generate")
     private val configureAiButton = JButton("Configure AI")
     private val copyButton = JButton("Copy Output")
@@ -80,10 +77,7 @@ class GitAssistantToolWindowPanel(
         add(createSummaryPanel(), BorderLayout.SOUTH)
 
         requestKindSelector.selectedItem = RequestKindOption.COMMIT_MESSAGE
-        commitStyleSelector.selectedItem = CommitStyleOption.CONVENTIONAL_COMMIT
-        updateCommitStyleVisibility()
 
-        requestKindSelector.addActionListener { updateCommitStyleVisibility() }
         generateButton.addActionListener { startGeneration() }
         configureAiButton.addActionListener { configureAiAction() }
         copyButton.addActionListener {
@@ -102,7 +96,6 @@ class GitAssistantToolWindowPanel(
      */
     override fun selectRequestKind(requestKind: AssistantRequestKind) {
         requestKindSelector.selectedItem = RequestKindOption.from(requestKind)
-        updateCommitStyleVisibility()
         requestKindSelector.requestFocusInWindow()
     }
 
@@ -115,12 +108,6 @@ class GitAssistantToolWindowPanel(
     internal fun setStagedOnlyForTesting(stagedOnly: Boolean) {
         stagedOnlyCheckBox.isSelected = stagedOnly
     }
-
-    internal fun selectCommitStyleForTesting(commitStyle: CommitMessageStyle) {
-        commitStyleSelector.selectedItem = CommitStyleOption.from(commitStyle)
-    }
-
-    internal fun isCommitStyleVisibleForTesting(): Boolean = commitStylePanel.isVisible
 
     internal fun applyResultForTesting(result: GitAssistantResult) {
         applyResult(result)
@@ -162,8 +149,6 @@ class GitAssistantToolWindowPanel(
                 },
             )
             add(Box.createVerticalStrut(JBUI.scale(CONTROL_GAP)))
-            add(commitStylePanel)
-            add(Box.createVerticalStrut(JBUI.scale(CONTROL_GAP)))
             add(buttonPanel())
         }
 
@@ -176,8 +161,6 @@ class GitAssistantToolWindowPanel(
             add(JLabel(label), BorderLayout.WEST)
             add(component, BorderLayout.CENTER)
         }
-
-    private fun createCommitStylePanel(): JComponent = labeledPanel("Commit style:", commitStyleSelector)
 
     private fun buttonPanel(): JComponent =
         JPanel().apply {
@@ -200,26 +183,14 @@ class GitAssistantToolWindowPanel(
             add(sourceSummaryLabel)
         }
 
-    private fun updateCommitStyleVisibility() {
-        commitStylePanel.isVisible = selectedRequestKind() == AssistantRequestKind.COMMIT_MESSAGE
-        revalidate()
-        repaint()
-    }
-
     private fun selectedRequestKind(): AssistantRequestKind {
         val selected = requestKindSelector.selectedItem as RequestKindOption
         return selected.kind
     }
 
-    private fun selectedCommitStyle(): CommitMessageStyle {
-        val selected = commitStyleSelector.selectedItem as CommitStyleOption
-        return selected.style
-    }
-
     private fun selectedOptions(): AssistantOptions =
         AssistantOptions(
             requestKind = selectedRequestKind(),
-            commitMessageStyle = selectedCommitStyle(),
             userNote = taskNoteTextArea.text,
             stagedOnly = stagedOnlyCheckBox.isSelected,
         )
@@ -234,7 +205,6 @@ class GitAssistantToolWindowPanel(
         generateButton.isEnabled = !running
         configureAiButton.isEnabled = !running
         requestKindSelector.isEnabled = !running
-        commitStyleSelector.isEnabled = !running
         stagedOnlyCheckBox.isEnabled = !running
     }
 
@@ -308,22 +278,6 @@ class GitAssistantToolWindowPanel(
 
         companion object {
             fun from(requestKind: AssistantRequestKind): RequestKindOption = entries.first { it.kind == requestKind }
-        }
-    }
-
-    private enum class CommitStyleOption(
-        val style: CommitMessageStyle,
-        private val label: String,
-    ) {
-        CONCISE(CommitMessageStyle.CONCISE, "Concise"),
-        CONVENTIONAL_COMMIT(CommitMessageStyle.CONVENTIONAL_COMMIT, "Conventional Commit"),
-        DETAILED(CommitMessageStyle.DETAILED, "Detailed"),
-        ;
-
-        override fun toString(): String = label
-
-        companion object {
-            fun from(commitStyle: CommitMessageStyle): CommitStyleOption = entries.first { it.style == commitStyle }
         }
     }
 

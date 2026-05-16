@@ -31,7 +31,6 @@ class PromptBuilderTest {
         val options =
             AssistantOptions(
                 requestKind = AssistantRequestKind.COMMIT_MESSAGE,
-                commitMessageStyle = CommitMessageStyle.DETAILED,
                 userNote = "  tighten logs and prompts  ",
                 branchSuggestionCount = 5,
             )

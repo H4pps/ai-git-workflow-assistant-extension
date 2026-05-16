@@ -28,7 +28,6 @@ class AiProviderSettingsService(
      */
     fun settings(): AiProviderSettings =
         AiProviderSettings(
-            provider = AiProviderType.fromStorage(state.provider),
             openAiBaseUrl = normalizeBaseUrl(state.openAiBaseUrl),
             openAiModel = normalizeModel(state.openAiModel),
         )
@@ -39,7 +38,6 @@ class AiProviderSettingsService(
     fun updateSettings(newSettings: AiProviderSettings) {
         state =
             AiProviderSettingsState(
-                provider = newSettings.provider.name,
                 openAiBaseUrl = normalizeBaseUrl(newSettings.openAiBaseUrl),
                 openAiModel = normalizeModel(newSettings.openAiModel),
             )
@@ -63,7 +61,6 @@ class AiProviderSettingsService(
 
     private fun normalizeState(state: AiProviderSettingsState): AiProviderSettingsState =
         AiProviderSettingsState(
-            provider = AiProviderType.fromStorage(state.provider).name,
             openAiBaseUrl = normalizeBaseUrl(state.openAiBaseUrl),
             openAiModel = normalizeModel(state.openAiModel),
         )

@@ -3,11 +3,9 @@ package dev.happs.aigitassistant.service.ai
 import com.google.gson.Gson
 import dev.happs.aigitassistant.ai.client.AiClient
 import dev.happs.aigitassistant.ai.client.AiClientException
-import dev.happs.aigitassistant.ai.client.DeterministicAiClient
 import dev.happs.aigitassistant.ai.client.LoggingAiClient
 import dev.happs.aigitassistant.ai.client.OpenAiCompatibleAiClient
 import dev.happs.aigitassistant.settings.AiProviderSettingsService
-import dev.happs.aigitassistant.settings.AiProviderType
 import java.net.http.HttpClient
 
 /**
@@ -25,16 +23,7 @@ class DefaultAiClientProvider(
     private val httpClient: HttpClient = HttpClient.newHttpClient(),
     private val gson: Gson = Gson(),
 ) : AiClientProvider {
-    private val deterministicClient: AiClient = LoggingAiClient(DeterministicAiClient())
-
-    override fun currentClient(): AiClient {
-        val settingsService = settingsServiceProvider()
-        val settings = settingsService.settings()
-        return when (settings.provider) {
-            AiProviderType.DETERMINISTIC -> deterministicClient
-            AiProviderType.OPENAI_COMPATIBLE -> openAiCompatibleClient(settingsService)
-        }
-    }
+    override fun currentClient(): AiClient = openAiCompatibleClient(settingsServiceProvider())
 
     private fun openAiCompatibleClient(settingsService: AiProviderSettingsService): AiClient {
         val settings = settingsService.settings()

@@ -7,10 +7,9 @@ import kotlin.test.assertNull
 
 class AssistantOptionsTest {
     @Test
-    fun `defaults commit style and branch count`() {
+    fun `defaults branch count and staged scope`() {
         val options = AssistantOptions(requestKind = AssistantRequestKind.COMMIT_MESSAGE)
 
-        assertEquals(CommitMessageStyle.CONVENTIONAL_COMMIT, options.commitMessageStyle)
         assertEquals(3, options.branchSuggestionCount)
         assertEquals(false, options.stagedOnly)
     }

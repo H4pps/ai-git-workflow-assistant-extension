@@ -5,7 +5,6 @@ package dev.happs.aigitassistant.ai.prompt
  */
 class AssistantOptions(
     val requestKind: AssistantRequestKind,
-    val commitMessageStyle: CommitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
     userNote: String? = null,
     val branchSuggestionCount: Int = DEFAULT_BRANCH_SUGGESTION_COUNT,
     val stagedOnly: Boolean = false,

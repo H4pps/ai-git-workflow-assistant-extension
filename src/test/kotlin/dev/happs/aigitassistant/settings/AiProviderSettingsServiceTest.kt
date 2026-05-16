@@ -6,10 +6,9 @@ import kotlin.test.assertNull
 
 class AiProviderSettingsServiceTest {
     @Test
-    fun `defaults to deterministic provider and baseline openai values`() {
+    fun `defaults to baseline openai values`() {
         val service = AiProviderSettingsService(credentialStore = InMemoryCredentialStore())
 
-        assertEquals(AiProviderType.DETERMINISTIC, service.settings().provider)
         assertEquals(AiProviderSettingsService.DEFAULT_OPENAI_BASE_URL, service.settings().openAiBaseUrl)
         assertEquals(AiProviderSettingsService.DEFAULT_OPENAI_MODEL, service.settings().openAiModel)
         assertNull(service.apiKeyOrNull())
@@ -21,7 +20,6 @@ class AiProviderSettingsServiceTest {
         val service = AiProviderSettingsService(credentialStore = credentialStore)
         service.updateSettings(
             AiProviderSettings(
-                provider = AiProviderType.OPENAI_COMPATIBLE,
                 openAiBaseUrl = " https://llm.example.com/v1/ ",
                 openAiModel = " gpt-4o-mini ",
             ),
@@ -29,7 +27,6 @@ class AiProviderSettingsServiceTest {
 
         service.storeApiKey("  sk-example-key  ")
 
-        assertEquals(AiProviderType.OPENAI_COMPATIBLE, service.settings().provider)
         assertEquals("https://llm.example.com/v1", service.settings().openAiBaseUrl)
         assertEquals("gpt-4o-mini", service.settings().openAiModel)
         assertEquals("sk-example-key", service.apiKeyOrNull())
@@ -37,17 +34,15 @@ class AiProviderSettingsServiceTest {
     }
 
     @Test
-    fun `load state falls back to deterministic defaults for invalid values`() {
+    fun `load state falls back to openai defaults for invalid values`() {
         val service = AiProviderSettingsService(credentialStore = InMemoryCredentialStore())
         service.loadState(
             AiProviderSettingsState(
-                provider = "unknown_provider",
                 openAiBaseUrl = "   ",
                 openAiModel = "   ",
             ),
         )
 
-        assertEquals(AiProviderType.DETERMINISTIC, service.settings().provider)
         assertEquals(AiProviderSettingsService.DEFAULT_OPENAI_BASE_URL, service.settings().openAiBaseUrl)
         assertEquals(AiProviderSettingsService.DEFAULT_OPENAI_MODEL, service.settings().openAiModel)
     }

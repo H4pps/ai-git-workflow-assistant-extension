@@ -12,7 +12,6 @@ import dev.happs.aigitassistant.git.GitContextState
 import dev.happs.aigitassistant.settings.AiCredentialStore
 import dev.happs.aigitassistant.settings.AiProviderSettings
 import dev.happs.aigitassistant.settings.AiProviderSettingsService
-import dev.happs.aigitassistant.settings.AiProviderType
 import java.net.InetSocketAddress
 import java.net.http.HttpClient
 import kotlin.test.Test
@@ -22,20 +21,8 @@ import kotlin.test.assertFailsWith
 
 class DefaultAiClientProviderTest {
     @Test
-    fun `returns deterministic client by default`() {
+    fun `requires api key by default`() {
         val provider = DefaultAiClientProvider(settingsServiceProvider = { settingsService() })
-
-        val response = provider.currentClient().generate(request())
-
-        assertEquals(AiResponseSource.DETERMINISTIC, response.source)
-        assertContains(response.generatedText, "Summary")
-    }
-
-    @Test
-    fun `requires api key for openai compatible provider`() {
-        val service = settingsService()
-        service.updateSettings(AiProviderSettings(provider = AiProviderType.OPENAI_COMPATIBLE))
-        val provider = DefaultAiClientProvider(settingsServiceProvider = { service })
 
         val error =
             assertFailsWith<AiClientException> {
@@ -60,7 +47,6 @@ class DefaultAiClientProviderTest {
             val service = settingsService()
             service.updateSettings(
                 AiProviderSettings(
-                    provider = AiProviderType.OPENAI_COMPATIBLE,
                     openAiBaseUrl = "http://127.0.0.1:${server.address.port}",
                     openAiModel = "gpt-test",
                 ),

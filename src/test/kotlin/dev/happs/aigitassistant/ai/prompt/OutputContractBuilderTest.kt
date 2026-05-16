@@ -8,18 +8,12 @@ class OutputContractBuilderTest {
     private val builder = OutputContractBuilder()
 
     @Test
-    fun `commit contract includes selected style and conventional commits rules`() {
-        val contract =
-            builder.build(
-                AssistantOptions(
-                    requestKind = AssistantRequestKind.COMMIT_MESSAGE,
-                    commitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
-                ),
-            )
+    fun `commit contract requires conventional commits rules`() {
+        val contract = builder.build(AssistantOptions(requestKind = AssistantRequestKind.COMMIT_MESSAGE))
 
         assertContains(contract, "[OUTPUT_CONTRACT]")
         assertContains(contract, "Return exactly one Git commit message.")
-        assertContains(contract, "Use the selected commit message style: CONVENTIONAL_COMMIT.")
+        assertContains(contract, "Use Conventional Commits 1.0.0.")
         assertContains(contract, "Follow Conventional Commits 1.0.0.")
         assertContains(contract, "<type>[optional scope][!]: <description>")
         assertContains(contract, "Use feat for new features and fix for bug fixes.")

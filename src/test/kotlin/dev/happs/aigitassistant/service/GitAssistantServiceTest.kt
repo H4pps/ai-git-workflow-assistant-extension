@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project
 import dev.happs.aigitassistant.ai.client.AiClient
 import dev.happs.aigitassistant.ai.client.AiResponse
 import dev.happs.aigitassistant.ai.client.AiResponseSource
-import dev.happs.aigitassistant.ai.client.DeterministicAiClient
 import dev.happs.aigitassistant.ai.prompt.AssistantOptions
 import dev.happs.aigitassistant.ai.prompt.AssistantRequest
 import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
@@ -22,7 +21,7 @@ import kotlin.test.assertTrue
 class GitAssistantServiceTest {
     private val service =
         GitAssistantService(
-            aiClientProvider = AiClientProvider { DeterministicAiClient() },
+            aiClientProvider = AiClientProvider { fakeAiClient() },
         )
 
     @Test
@@ -35,7 +34,7 @@ class GitAssistantServiceTest {
 
         assertEquals("Generated Commit Message", result.title)
         assertEquals(AssistantRequestKind.COMMIT_MESSAGE, result.requestKind)
-        assertEquals(AiResponseSource.DETERMINISTIC, result.source)
+        assertEquals(AiResponseSource.OPENAI_COMPATIBLE, result.source)
         assertEquals(GitContextState.CHANGED, result.gitState)
         assertEquals("feature/editable-output", result.branchName)
         assertEquals(1, result.changedFileCount)
@@ -86,7 +85,7 @@ class GitAssistantServiceTest {
         val service =
             GitAssistantService(
                 gitContextCollector = collector,
-                aiClientProvider = AiClientProvider { DeterministicAiClient() },
+                aiClientProvider = AiClientProvider { fakeAiClient() },
             )
 
         val result =
@@ -177,6 +176,24 @@ class GitAssistantServiceTest {
             stagedDiffTruncated = false,
             unstagedDiffTruncated = false,
         )
+
+    private fun fakeAiClient(): AiClient =
+        object : AiClient {
+            override fun generate(request: AssistantRequest): AiResponse =
+                AiResponse(
+                    generatedText = generatedTextFor(request.kind),
+                    kind = request.kind,
+                    source = AiResponseSource.OPENAI_COMPATIBLE,
+                )
+        }
+
+    private fun generatedTextFor(requestKind: AssistantRequestKind): String =
+        when (requestKind) {
+            AssistantRequestKind.COMMIT_MESSAGE -> "chore: update editable output"
+            AssistantRequestKind.BRANCH_NAME -> "update-editable-output"
+            AssistantRequestKind.CHANGE_SUMMARY ->
+                "Summary\n- Update editable output.\n\nRisks\n- Low.\n\nSuggested tests\n- Run tests."
+        }
 
     private fun fakeProject(): Project =
         Proxy

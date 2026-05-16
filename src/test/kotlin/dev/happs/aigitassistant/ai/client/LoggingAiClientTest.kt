@@ -23,7 +23,7 @@ class LoggingAiClientTest {
                     AiResponse(
                         generatedText = "ok",
                         kind = request.kind,
-                        source = AiResponseSource.DETERMINISTIC,
+                        source = AiResponseSource.OPENAI_COMPATIBLE,
                     )
             }
         val client =

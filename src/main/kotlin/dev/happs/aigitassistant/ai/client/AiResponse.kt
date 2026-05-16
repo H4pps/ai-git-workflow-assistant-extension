@@ -15,6 +15,5 @@ data class AiResponse(
  * Response source marker for diagnostics and UI metadata.
  */
 enum class AiResponseSource {
-    DETERMINISTIC,
     OPENAI_COMPATIBLE,
 }

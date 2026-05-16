@@ -30,7 +30,6 @@ class PromptBuilder {
                 userNoteCharCount = options.userNote?.length ?: 0,
                 branchSuggestionCount = options.branchSuggestionCount,
                 requestKind = options.requestKind,
-                commitMessageStyle = options.commitMessageStyle,
                 stagedOnly = options.stagedOnly,
                 errorCode = reasoningContext.errorCode,
             )
@@ -52,7 +51,6 @@ class PromptBuilder {
         buildString {
             appendSection("REQUEST")
             appendLine("kind=${options.requestKind.name}")
-            appendLine("commit_message_style=${options.commitMessageStyle.name}")
             appendLine("branch_suggestion_count=${options.branchSuggestionCount}")
 
             appendSection("INPUT_SCOPE")

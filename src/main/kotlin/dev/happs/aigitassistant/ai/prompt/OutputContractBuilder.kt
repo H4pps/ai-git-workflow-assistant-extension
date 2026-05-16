@@ -12,7 +12,7 @@ class OutputContractBuilder {
             appendSection("OUTPUT_CONTRACT")
             appendLine("When USER_NOTE is not (none), apply it as task-specific user guidance.")
             when (options.requestKind) {
-                AssistantRequestKind.COMMIT_MESSAGE -> appendCommitMessageContract(options)
+                AssistantRequestKind.COMMIT_MESSAGE -> appendCommitMessageContract()
                 AssistantRequestKind.BRANCH_NAME -> appendBranchNameContract(options)
                 AssistantRequestKind.CHANGE_SUMMARY -> appendChangeSummaryContract()
             }
@@ -25,13 +25,11 @@ class OutputContractBuilder {
         appendLine("[$label]")
     }
 
-    private fun StringBuilder.appendCommitMessageContract(options: AssistantOptions) {
+    private fun StringBuilder.appendCommitMessageContract() {
         appendLine("Return exactly one Git commit message.")
-        appendLine("Use the selected commit message style: ${options.commitMessageStyle.name}.")
-        if (options.commitMessageStyle == CommitMessageStyle.CONVENTIONAL_COMMIT) {
-            appendConventionalCommitRules()
-        }
-        appendCommitMessageExamples(options.commitMessageStyle)
+        appendLine("Use Conventional Commits 1.0.0.")
+        appendConventionalCommitRules()
+        appendCommitMessageExample()
         appendLine("Do not include headings, bullets, summaries, risks, rationale, or markdown.")
         appendLine("Never return a change summary for this request.")
     }
@@ -62,17 +60,9 @@ class OutputContractBuilder {
         appendLine("- <one or two bullets>")
     }
 
-    private fun StringBuilder.appendCommitMessageExamples(commitMessageStyle: CommitMessageStyle) {
+    private fun StringBuilder.appendCommitMessageExample() {
         appendLine("Expected response shape example:")
-        when (commitMessageStyle) {
-            CommitMessageStyle.CONCISE -> appendLine("Update provider settings")
-            CommitMessageStyle.CONVENTIONAL_COMMIT -> appendLine("chore(settings): update provider defaults")
-            CommitMessageStyle.DETAILED -> {
-                appendLine("Update provider settings")
-                appendLine()
-                appendLine("Adjust model configuration defaults and settings copy.")
-            }
-        }
+        appendLine("chore(settings): update provider defaults")
     }
 
     private fun StringBuilder.appendConventionalCommitRules() {

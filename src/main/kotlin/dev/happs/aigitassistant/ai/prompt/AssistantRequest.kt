@@ -32,7 +32,6 @@ data class AssistantRequestSafeMetadata(
     val userNoteCharCount: Int,
     val branchSuggestionCount: Int,
     val requestKind: AssistantRequestKind,
-    val commitMessageStyle: CommitMessageStyle,
     val stagedOnly: Boolean,
     val errorCode: String?,
 ) {
@@ -54,7 +53,6 @@ data class AssistantRequestSafeMetadata(
             "user_note_char_count" to userNoteCharCount,
             "branch_suggestion_count" to branchSuggestionCount,
             "request_kind" to requestKind.name,
-            "commit_message_style" to commitMessageStyle.name,
             "staged_only" to stagedOnly,
             "error_code" to errorCode,
         )

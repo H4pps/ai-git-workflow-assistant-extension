@@ -5,7 +5,6 @@ import com.google.gson.JsonParser
 import com.sun.net.httpserver.HttpServer
 import dev.happs.aigitassistant.ai.prompt.AssistantOptions
 import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
@@ -101,13 +100,9 @@ class OpenAiCompatibleAiClientTest {
 
     @Test
     fun `conventional commit request sends conventional commits guidance`() {
-        val messages =
-            capturedMessagesFor(
-                requestKind = AssistantRequestKind.COMMIT_MESSAGE,
-                commitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
-            )
+        val messages = capturedMessagesFor(requestKind = AssistantRequestKind.COMMIT_MESSAGE)
 
-        assertContains(messages.system, "Follow Conventional Commits 1.0.0 when that style is selected.")
+        assertContains(messages.system, "Use Conventional Commits 1.0.0.")
         assertContains(messages.system, "Follow Conventional Commits 1.0.0.")
         assertContains(messages.system, "<type>[optional scope][!]: <description>")
         assertContains(messages.system, "Use feat for new features and fix for bug fixes.")
@@ -327,10 +322,7 @@ class OpenAiCompatibleAiClientTest {
         assertContains(error.message ?: "", "model is not configured")
     }
 
-    private fun capturedMessagesFor(
-        requestKind: AssistantRequestKind,
-        commitMessageStyle: CommitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
-    ): CapturedMessages {
+    private fun capturedMessagesFor(requestKind: AssistantRequestKind): CapturedMessages {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         val requests = mutableListOf<CapturedRequest>()
         server.createContext("/chat/completions") { exchange ->
@@ -359,7 +351,7 @@ class OpenAiCompatibleAiClientTest {
                     gson = Gson(),
                 )
 
-            client.generate(request(requestKind = requestKind, commitMessageStyle = commitMessageStyle))
+            client.generate(request(requestKind = requestKind))
 
             val requestJson = JsonParser.parseString(requests.single().body).asJsonObject
             val messages = requestJson.getAsJsonArray("messages")
@@ -372,32 +364,29 @@ class OpenAiCompatibleAiClientTest {
         }
     }
 
-    private fun request(
-        requestKind: AssistantRequestKind = AssistantRequestKind.CHANGE_SUMMARY,
-        commitMessageStyle: CommitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
-    ) = promptBuilder.build(
-        context =
-            GitContext(
-                state = GitContextState.CHANGED,
-                repositoryRoot = "/tmp/repo",
-                branchName = "feature/openai",
-                changedFilePaths =
-                    listOf(
-                        "src/main/kotlin/dev/happs/aigitassistant/service/GitAssistantService.kt",
-                    ),
-                untrackedFilePaths = emptyList(),
-                stagedDiff = "diff --git a/service.kt b/service.kt\n+new behavior",
-                unstagedDiff = "",
-                stagedDiffTruncated = false,
-                unstagedDiffTruncated = false,
-            ),
-        options =
-            AssistantOptions(
-                requestKind = requestKind,
-                commitMessageStyle = commitMessageStyle,
-                userNote = "focus on provider settings",
-            ),
-    )
+    private fun request(requestKind: AssistantRequestKind = AssistantRequestKind.CHANGE_SUMMARY) =
+        promptBuilder.build(
+            context =
+                GitContext(
+                    state = GitContextState.CHANGED,
+                    repositoryRoot = "/tmp/repo",
+                    branchName = "feature/openai",
+                    changedFilePaths =
+                        listOf(
+                            "src/main/kotlin/dev/happs/aigitassistant/service/GitAssistantService.kt",
+                        ),
+                    untrackedFilePaths = emptyList(),
+                    stagedDiff = "diff --git a/service.kt b/service.kt\n+new behavior",
+                    unstagedDiff = "",
+                    stagedDiffTruncated = false,
+                    unstagedDiffTruncated = false,
+                ),
+            options =
+                AssistantOptions(
+                    requestKind = requestKind,
+                    userNote = "focus on provider settings",
+                ),
+        )
 
     private data class CapturedMessages(
         val system: String,
