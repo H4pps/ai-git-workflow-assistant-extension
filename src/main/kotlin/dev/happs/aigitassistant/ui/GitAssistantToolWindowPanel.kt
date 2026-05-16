@@ -2,6 +2,7 @@ package dev.happs.aigitassistant.ui
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -17,6 +18,7 @@ import dev.happs.aigitassistant.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
+import dev.happs.aigitassistant.settings.AiProviderSettingsConfigurable
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -37,9 +39,12 @@ import javax.swing.JTextArea
 @Suppress("TooManyFunctions")
 class GitAssistantToolWindowPanel(
     private val project: Project,
-    private val assistantService: GitAssistantService = GitAssistantService(),
+    private val assistantService: GitAssistantService = project.getService(GitAssistantService::class.java),
     private val toolWindowService: GitAssistantToolWindowService =
         project.getService(GitAssistantToolWindowService::class.java),
+    private val configureAiAction: () -> Unit = {
+        ShowSettingsUtil.getInstance().showSettingsDialog(project, AiProviderSettingsConfigurable::class.java)
+    },
 ) : JPanel(BorderLayout(0, JBUI.scale(PANEL_GAP))),
     Disposable,
     GitAssistantToolWindowService.RequestKindSelectionTarget {
@@ -52,6 +57,7 @@ class GitAssistantToolWindowPanel(
     private val commitStyleSelector = ComboBox(CommitStyleOption.entries.toTypedArray())
     private val commitStylePanel = createCommitStylePanel()
     private val generateButton = JButton("Generate")
+    private val configureAiButton = JButton("Configure AI")
     private val copyButton = JButton("Copy Output")
     private val outputTextArea =
         JTextArea("", OUTPUT_ROWS, OUTPUT_COLUMNS).apply {
@@ -77,6 +83,7 @@ class GitAssistantToolWindowPanel(
 
         requestKindSelector.addActionListener { updateCommitStyleVisibility() }
         generateButton.addActionListener { startGeneration() }
+        configureAiButton.addActionListener { configureAiAction() }
         copyButton.addActionListener {
             CopyPasteManager.getInstance().setContents(StringSelection(outputTextArea.text))
         }
@@ -111,6 +118,10 @@ class GitAssistantToolWindowPanel(
 
     internal fun applyResultForTesting(result: GitAssistantResult) {
         applyResult(result)
+    }
+
+    internal fun triggerConfigureAiForTesting() {
+        configureAiButton.doClick()
     }
 
     internal fun outputTextForTesting(): String = outputTextArea.text
@@ -157,10 +168,14 @@ class GitAssistantToolWindowPanel(
     private fun createCommitStylePanel(): JComponent = labeledPanel("Commit style:", commitStyleSelector)
 
     private fun buttonPanel(): JComponent =
-        JPanel(BorderLayout(JBUI.scale(SUB_CONTROL_GAP), 0)).apply {
+        JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
             alignmentX = Component.LEFT_ALIGNMENT
-            add(generateButton, BorderLayout.WEST)
-            add(copyButton, BorderLayout.EAST)
+            add(generateButton)
+            add(Box.createHorizontalStrut(JBUI.scale(SUB_CONTROL_GAP)))
+            add(configureAiButton)
+            add(Box.createHorizontalGlue())
+            add(copyButton)
         }
 
     private fun createSummaryPanel(): JComponent =
@@ -204,6 +219,7 @@ class GitAssistantToolWindowPanel(
 
     private fun setGenerationRunning(running: Boolean) {
         generateButton.isEnabled = !running
+        configureAiButton.isEnabled = !running
         requestKindSelector.isEnabled = !running
         commitStyleSelector.isEnabled = !running
     }

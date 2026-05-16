@@ -6,6 +6,7 @@ import dev.happs.aigitassistant.git.GitContextState
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.service.GitAssistantResult
+import dev.happs.aigitassistant.service.GitAssistantService
 import dev.happs.aigitassistant.service.GitAssistantToolWindowService
 import java.lang.reflect.Proxy
 import kotlin.test.Test
@@ -70,10 +71,25 @@ class GitAssistantToolWindowPanelTest {
         )
     }
 
-    private fun panel(): GitAssistantToolWindowPanel =
+    @Test
+    fun `configure ai button invokes configured action`() {
+        var configureInvocations = 0
+        val panel =
+            panel(
+                onConfigureAi = { configureInvocations += 1 },
+            )
+
+        panel.triggerConfigureAiForTesting()
+
+        assertEquals(1, configureInvocations)
+    }
+
+    private fun panel(onConfigureAi: () -> Unit = {}): GitAssistantToolWindowPanel =
         GitAssistantToolWindowPanel(
             project = fakeProject(),
+            assistantService = GitAssistantService(),
             toolWindowService = GitAssistantToolWindowService(),
+            configureAiAction = onConfigureAi,
         )
 
     private fun fakeProject(): Project =
