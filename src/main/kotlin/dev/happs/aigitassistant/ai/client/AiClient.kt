@@ -1,6 +1,6 @@
 package dev.happs.aigitassistant.ai.client
 
-import dev.happs.aigitassistant.prompt.AssistantRequest
+import dev.happs.aigitassistant.ai.prompt.AssistantRequest
 
 /**
  * Service boundary for text generation from assistant requests.

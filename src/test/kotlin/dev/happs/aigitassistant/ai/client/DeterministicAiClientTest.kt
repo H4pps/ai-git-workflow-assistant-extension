@@ -1,11 +1,11 @@
 package dev.happs.aigitassistant.ai.client
 
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
+import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.CommitMessageStyle
-import dev.happs.aigitassistant.prompt.PromptBuilder
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -143,6 +143,46 @@ class DeterministicAiClientTest {
     }
 
     @Test
+    fun `summary output applies user note`() {
+        val request =
+            requestFor(
+                context = changedContext(),
+                options =
+                    AssistantOptions(
+                        requestKind = AssistantRequestKind.CHANGE_SUMMARY,
+                        userNote = "focus on provider settings",
+                    ),
+            )
+
+        val response = client.generate(request)
+
+        assertContains(response.generatedText, "focus on provider settings")
+    }
+
+    @Test
+    fun `staged only output ignores unstaged changes when no staged changes exist`() {
+        val request =
+            requestFor(
+                context =
+                    changedContext(
+                        changedFilePaths = listOf("src/Unstaged.kt"),
+                        stagedFilePaths = emptyList(),
+                        stagedDiff = "",
+                        unstagedDiff = "diff --git a/src/Unstaged.kt b/src/Unstaged.kt\n+unstaged",
+                    ),
+                options =
+                    AssistantOptions(
+                        requestKind = AssistantRequestKind.COMMIT_MESSAGE,
+                        stagedOnly = true,
+                    ),
+            )
+
+        val response = client.generate(request)
+
+        assertContains(response.generatedText, "No staged changes")
+    }
+
+    @Test
     fun `summary only mentions truncated diffs when truncation is present`() {
         val normal =
             client.generate(
@@ -208,9 +248,10 @@ class DeterministicAiClientTest {
         branchName: String? = "feature/phase-03",
         changedFilePaths: List<String> =
             listOf(
-                "src/main/kotlin/dev/happs/aigitassistant/prompt/PromptBuilder.kt",
+                "src/main/kotlin/dev/happs/aigitassistant/ai/prompt/PromptBuilder.kt",
                 "src/main/kotlin/dev/happs/aigitassistant/ai/client/DeterministicAiClient.kt",
             ),
+        stagedFilePaths: List<String> = changedFilePaths,
         untrackedFilePaths: List<String> = emptyList(),
         stagedDiff: String = "diff --git a/prompt b/prompt\n+prompt changes",
         unstagedDiff: String = "diff --git a/ai b/ai\n+ai changes",
@@ -223,6 +264,7 @@ class DeterministicAiClientTest {
             repositoryRoot = repositoryRoot,
             branchName = branchName,
             changedFilePaths = changedFilePaths,
+            stagedFilePaths = stagedFilePaths,
             untrackedFilePaths = untrackedFilePaths,
             stagedDiff = stagedDiff,
             unstagedDiff = unstagedDiff,

@@ -1,6 +1,6 @@
 package dev.happs.aigitassistant.ai.client
 
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
 
 /**
  * Result returned by [AiClient] implementations.

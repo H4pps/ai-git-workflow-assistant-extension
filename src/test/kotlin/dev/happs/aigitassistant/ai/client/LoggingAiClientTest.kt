@@ -1,10 +1,10 @@
 package dev.happs.aigitassistant.ai.client
 
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.PromptBuilder
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -19,7 +19,7 @@ class LoggingAiClientTest {
         val logs = mutableListOf<CapturedLog>()
         val delegate =
             object : AiClient {
-                override fun generate(request: dev.happs.aigitassistant.prompt.AssistantRequest): AiResponse =
+                override fun generate(request: dev.happs.aigitassistant.ai.prompt.AssistantRequest): AiResponse =
                     AiResponse(
                         generatedText = "ok",
                         kind = request.kind,
@@ -60,7 +60,7 @@ class LoggingAiClientTest {
         val logs = mutableListOf<CapturedLog>()
         val delegate =
             object : AiClient {
-                override fun generate(request: dev.happs.aigitassistant.prompt.AssistantRequest): AiResponse =
+                override fun generate(request: dev.happs.aigitassistant.ai.prompt.AssistantRequest): AiResponse =
                     throw IllegalStateException("unexpected failure")
             }
         val client =

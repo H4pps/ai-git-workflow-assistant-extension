@@ -3,11 +3,12 @@ package dev.happs.aigitassistant.ai.client
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.sun.net.httpserver.HttpServer
+import dev.happs.aigitassistant.ai.prompt.AssistantOptions
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
+import dev.happs.aigitassistant.ai.prompt.PromptBuilder
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantOptions
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.PromptBuilder
 import java.net.InetSocketAddress
 import java.net.http.HttpClient
 import kotlin.test.Test
@@ -75,9 +76,77 @@ class OpenAiCompatibleAiClientTest {
             assertContains(systemMessage.get("content").asString, "Git workflow")
             assertEquals("user", userMessage.get("role").asString)
             assertContains(userMessage.get("content").asString, "[REQUEST]")
+            assertContains(userMessage.get("content").asString, "[USER_NOTE]")
+            assertContains(userMessage.get("content").asString, "focus on provider settings")
         } finally {
             server.stop(0)
         }
+    }
+
+    @Test
+    fun `commit request sends strict commit contract`() {
+        val messages = capturedMessagesFor(AssistantRequestKind.COMMIT_MESSAGE)
+
+        assertContains(messages.system, "Request kind: COMMIT_MESSAGE.")
+        assertContains(messages.system, "Return exactly one Git commit message.")
+        assertContains(messages.system, "Expected response shape example:")
+        assertContains(messages.system, "chore(settings): update provider defaults")
+        assertContains(messages.system, "Never return a change summary for this request.")
+        assertFalse(messages.system.contains("Summary, Risks, and Suggested tests"))
+        assertContains(messages.user, "[REQUEST]")
+        assertFalse(messages.user.contains("[OUTPUT_CONTRACT]"))
+        assertFalse(messages.user.contains("Return exactly one Git commit message."))
+        assertFalse(messages.user.contains("Return only the sections: Summary"))
+    }
+
+    @Test
+    fun `conventional commit request sends conventional commits guidance`() {
+        val messages =
+            capturedMessagesFor(
+                requestKind = AssistantRequestKind.COMMIT_MESSAGE,
+                commitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
+            )
+
+        assertContains(messages.system, "Follow Conventional Commits 1.0.0 when that style is selected.")
+        assertContains(messages.system, "Follow Conventional Commits 1.0.0.")
+        assertContains(messages.system, "<type>[optional scope][!]: <description>")
+        assertContains(messages.system, "Use feat for new features and fix for bug fixes.")
+        assertContains(messages.system, "Use BREAKING CHANGE:")
+        assertFalse(messages.user.contains("Follow Conventional Commits 1.0.0."))
+        assertFalse(messages.user.contains("<type>[optional scope][!]: <description>"))
+    }
+
+    @Test
+    fun `branch request sends strict branch contract`() {
+        val messages = capturedMessagesFor(AssistantRequestKind.BRANCH_NAME)
+
+        assertContains(messages.system, "Request kind: BRANCH_NAME.")
+        assertContains(messages.system, "Return only 3 bare lowercase kebab-case branch names, one per line.")
+        assertContains(messages.system, "Expected response shape example:")
+        assertContains(messages.system, "update-provider-settings")
+        assertContains(messages.system, "Never return a change summary for this request.")
+        assertFalse(messages.system.contains("Summary, Risks, and Suggested tests"))
+        assertContains(messages.user, "[REQUEST]")
+        assertFalse(messages.user.contains("[OUTPUT_CONTRACT]"))
+        assertFalse(messages.user.contains("bare lowercase kebab-case branch names"))
+        assertFalse(messages.user.contains("Return only the sections: Summary"))
+    }
+
+    @Test
+    fun `summary request sends summary contract in system message only`() {
+        val messages = capturedMessagesFor(AssistantRequestKind.CHANGE_SUMMARY)
+
+        assertContains(messages.system, "Request kind: CHANGE_SUMMARY.")
+        assertContains(messages.system, "Return only the sections: Summary, Risks, and Suggested tests.")
+        assertContains(messages.system, "Summary")
+        assertContains(messages.system, "Risks")
+        assertContains(messages.system, "Suggested tests")
+        assertFalse(messages.system.contains("Return exactly one Git commit message."))
+        assertFalse(messages.system.contains("bare lowercase kebab-case branch names"))
+        assertContains(messages.user, "[REQUEST]")
+        assertContains(messages.user, "[USER_NOTE]")
+        assertFalse(messages.user.contains("[OUTPUT_CONTRACT]"))
+        assertFalse(messages.user.contains("Summary, Risks, and Suggested tests"))
     }
 
     @Test
@@ -258,25 +327,82 @@ class OpenAiCompatibleAiClientTest {
         assertContains(error.message ?: "", "model is not configured")
     }
 
-    private fun request() =
-        promptBuilder.build(
-            context =
-                GitContext(
-                    state = GitContextState.CHANGED,
-                    repositoryRoot = "/tmp/repo",
-                    branchName = "feature/openai",
-                    changedFilePaths =
-                        listOf(
-                            "src/main/kotlin/dev/happs/aigitassistant/service/GitAssistantService.kt",
-                        ),
-                    untrackedFilePaths = emptyList(),
-                    stagedDiff = "diff --git a/service.kt b/service.kt\n+new behavior",
-                    unstagedDiff = "",
-                    stagedDiffTruncated = false,
-                    unstagedDiffTruncated = false,
-                ),
-            options = AssistantOptions(requestKind = AssistantRequestKind.CHANGE_SUMMARY),
-        )
+    private fun capturedMessagesFor(
+        requestKind: AssistantRequestKind,
+        commitMessageStyle: CommitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
+    ): CapturedMessages {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        val requests = mutableListOf<CapturedRequest>()
+        server.createContext("/chat/completions") { exchange ->
+            val body = exchange.requestBody.use { it.readBytes().decodeToString() }
+            requests +=
+                CapturedRequest(
+                    method = exchange.requestMethod,
+                    path = exchange.requestURI.path,
+                    authorization = exchange.requestHeaders.getFirst("Authorization"),
+                    contentType = exchange.requestHeaders.getFirst("Content-Type"),
+                    body = body,
+                )
+            val response = """{"choices":[{"message":{"content":"ok"}}]}"""
+            exchange.responseHeaders.add("Content-Type", "application/json")
+            exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(response.toByteArray()) }
+        }
+        server.start()
+        try {
+            val client =
+                OpenAiCompatibleAiClient(
+                    baseUrl = "http://127.0.0.1:${server.address.port}",
+                    model = "gpt-test",
+                    apiKey = "sk-test-secret",
+                    httpClient = HttpClient.newHttpClient(),
+                    gson = Gson(),
+                )
+
+            client.generate(request(requestKind = requestKind, commitMessageStyle = commitMessageStyle))
+
+            val requestJson = JsonParser.parseString(requests.single().body).asJsonObject
+            val messages = requestJson.getAsJsonArray("messages")
+            return CapturedMessages(
+                system = messages[0].asJsonObject.get("content").asString,
+                user = messages[1].asJsonObject.get("content").asString,
+            )
+        } finally {
+            server.stop(0)
+        }
+    }
+
+    private fun request(
+        requestKind: AssistantRequestKind = AssistantRequestKind.CHANGE_SUMMARY,
+        commitMessageStyle: CommitMessageStyle = CommitMessageStyle.CONVENTIONAL_COMMIT,
+    ) = promptBuilder.build(
+        context =
+            GitContext(
+                state = GitContextState.CHANGED,
+                repositoryRoot = "/tmp/repo",
+                branchName = "feature/openai",
+                changedFilePaths =
+                    listOf(
+                        "src/main/kotlin/dev/happs/aigitassistant/service/GitAssistantService.kt",
+                    ),
+                untrackedFilePaths = emptyList(),
+                stagedDiff = "diff --git a/service.kt b/service.kt\n+new behavior",
+                unstagedDiff = "",
+                stagedDiffTruncated = false,
+                unstagedDiffTruncated = false,
+            ),
+        options =
+            AssistantOptions(
+                requestKind = requestKind,
+                commitMessageStyle = commitMessageStyle,
+                userNote = "focus on provider settings",
+            ),
+    )
+
+    private data class CapturedMessages(
+        val system: String,
+        val user: String,
+    )
 
     private data class CapturedRequest(
         val method: String,

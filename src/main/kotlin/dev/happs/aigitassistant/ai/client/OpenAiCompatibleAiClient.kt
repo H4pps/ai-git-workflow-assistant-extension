@@ -6,8 +6,9 @@ import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
-import dev.happs.aigitassistant.prompt.AssistantRequest
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.AssistantRequest
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
+import dev.happs.aigitassistant.ai.prompt.OutputContractBuilder
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.http.HttpClient
@@ -34,6 +35,7 @@ class OpenAiCompatibleAiClient(
 ) : AiClient {
     private val endpoint = OpenAiCompatibleEndpoint(baseUrl)
     private val logger = Logger.getInstance(OpenAiCompatibleAiClient::class.java)
+    private val outputContractBuilder = OutputContractBuilder()
 
     /**
      * Sends [request] to a configured Chat Completions-compatible API.
@@ -47,20 +49,40 @@ class OpenAiCompatibleAiClient(
         if (normalizedModel.isBlank()) {
             throw AiClientException("OpenAI-compatible model is not configured. Configure AI settings.")
         }
-        val payload =
-            ChatCompletionsRequest(
-                model = normalizedModel,
+        val responseText =
+            completeChat(
+                normalizedModel = normalizedModel,
                 messages =
                     listOf(
                         ChatMessage(
                             role = "system",
-                            content = systemMessageFor(request.kind),
+                            content = systemMessageFor(request),
                         ),
                         ChatMessage(
                             role = "user",
                             content = request.promptText,
                         ),
                     ),
+            )
+        return AiResponse(
+            generatedText = responseText,
+            kind = request.kind,
+            source = AiResponseSource.OPENAI_COMPATIBLE,
+        )
+    }
+
+    /**
+     * Sends one Chat Completions request and returns the parsed assistant text.
+     */
+    @Suppress("LongMethod")
+    private fun completeChat(
+        normalizedModel: String,
+        messages: List<ChatMessage>,
+    ): String {
+        val payload =
+            ChatCompletionsRequest(
+                model = normalizedModel,
+                messages = messages,
             )
         val requestBody = gson.toJson(payload)
         val httpRequest =
@@ -100,12 +122,7 @@ class OpenAiCompatibleAiClient(
         if (response.statusCode() !in SUCCESS_STATUS_RANGE) {
             throw AiClientException("AI provider request failed with HTTP ${response.statusCode()}.")
         }
-        val responseText = parseAssistantText(response.body())
-        return AiResponse(
-            generatedText = responseText,
-            kind = request.kind,
-            source = AiResponseSource.OPENAI_COMPATIBLE,
-        )
+        return parseAssistantText(response.body())
     }
 
     /**
@@ -170,16 +187,19 @@ class OpenAiCompatibleAiClient(
         }
 
     /**
-     * Builds a compact task-specific system instruction for the provider.
+     * Builds the system instruction that defines the assistant role and output contract.
      */
-    private fun systemMessageFor(requestKind: AssistantRequestKind): String =
-        when (requestKind) {
-            AssistantRequestKind.COMMIT_MESSAGE ->
-                "You are an IntelliJ Git workflow assistant. Return only an editable Git commit message."
-            AssistantRequestKind.BRANCH_NAME ->
-                "You are an IntelliJ Git workflow assistant. Return only branch name suggestions, one per line."
-            AssistantRequestKind.CHANGE_SUMMARY ->
-                "You are an IntelliJ Git workflow assistant. Return only Summary, Risks, and Suggested tests sections."
+    private fun systemMessageFor(request: AssistantRequest): String =
+        buildString {
+            appendLine("You are an IntelliJ Git workflow assistant.")
+            appendLine("Use the user message only as input context.")
+            appendLine("Follow the output contract exactly.")
+            appendLine("Request kind: ${request.kind.name}.")
+            if (request.options.commitMessageStyle == CommitMessageStyle.CONVENTIONAL_COMMIT) {
+                appendLine("Follow Conventional Commits 1.0.0 when that style is selected.")
+            }
+            appendLine()
+            append(outputContractBuilder.build(request.options))
         }
 
     /**

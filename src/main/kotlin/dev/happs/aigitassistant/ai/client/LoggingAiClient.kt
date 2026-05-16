@@ -1,7 +1,7 @@
 package dev.happs.aigitassistant.ai.client
 
 import com.intellij.openapi.diagnostic.Logger
-import dev.happs.aigitassistant.prompt.AssistantRequest
+import dev.happs.aigitassistant.ai.prompt.AssistantRequest
 
 /**
  * Log severity used by [LoggingAiClient] sinks.

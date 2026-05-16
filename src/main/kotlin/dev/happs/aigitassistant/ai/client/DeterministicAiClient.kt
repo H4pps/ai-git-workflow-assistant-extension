@@ -1,10 +1,10 @@
 package dev.happs.aigitassistant.ai.client
 
+import dev.happs.aigitassistant.ai.prompt.AssistantRequest
+import dev.happs.aigitassistant.ai.prompt.AssistantRequestKind
+import dev.happs.aigitassistant.ai.prompt.CommitMessageStyle
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
-import dev.happs.aigitassistant.prompt.AssistantRequest
-import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.prompt.CommitMessageStyle
 import java.util.Locale
 
 /**
@@ -16,10 +16,10 @@ class DeterministicAiClient : AiClient {
      */
     override fun generate(request: AssistantRequest): AiResponse {
         val text =
-            when (request.gitContext.state) {
+            when (request.reasoningContext.state) {
                 GitContextState.NO_REPOSITORY -> "No Git repository was detected for this project."
-                GitContextState.FAILED -> failedText(request.gitContext)
-                GitContextState.CLEAN -> "No pending changes were detected."
+                GitContextState.FAILED -> failedText(request.reasoningContext)
+                GitContextState.CLEAN -> cleanText(request)
                 GitContextState.CHANGED -> changedText(request)
             }
         return AiResponse(
@@ -36,7 +36,7 @@ class DeterministicAiClient : AiClient {
         when (request.kind) {
             AssistantRequestKind.COMMIT_MESSAGE -> commitMessage(request)
             AssistantRequestKind.BRANCH_NAME -> branchNames(request)
-            AssistantRequestKind.CHANGE_SUMMARY -> changeSummary(request.gitContext)
+            AssistantRequestKind.CHANGE_SUMMARY -> changeSummary(request)
         }
 
     /**
@@ -46,6 +46,16 @@ class DeterministicAiClient : AiClient {
         val error = context.errorCode ?: "unknown_error"
         return "Git context collection failed ($error). Please refresh Git status and try again."
     }
+
+    /**
+     * Builds a clean-state response that reflects the selected reasoning scope.
+     */
+    private fun cleanText(request: AssistantRequest): String =
+        if (request.options.stagedOnly) {
+            "No staged changes were detected."
+        } else {
+            "No pending changes were detected."
+        }
 
     /**
      * Builds a commit message for the selected style.
@@ -58,7 +68,7 @@ class DeterministicAiClient : AiClient {
             CommitMessageStyle.DETAILED ->
                 buildString {
                     appendLine("Update $topic")
-                    changedAreas(request.gitContext).forEach { area ->
+                    changedAreas(request.reasoningContext).forEach { area ->
                         appendLine("- Update $area")
                     }
                 }.trimEnd()
@@ -77,9 +87,14 @@ class DeterministicAiClient : AiClient {
     /**
      * Builds a concise change summary with risk and testing guidance.
      */
-    private fun changeSummary(context: GitContext): String =
-        buildString {
+    private fun changeSummary(request: AssistantRequest): String {
+        val context = request.reasoningContext
+        val userNote = request.options.userNote
+        return buildString {
             appendLine("Summary")
+            if (userNote != null) {
+                appendLine("- Applies requested focus: $userNote.")
+            }
             appendLine("- Updates ${changedAreas(context).joinToString(separator = ", ")}.")
             appendLine()
             appendLine("Risks")
@@ -93,13 +108,14 @@ class DeterministicAiClient : AiClient {
             appendLine("- Run focused tests for the changed areas.")
             append("- Run the repository quality checks before committing.")
         }
+    }
 }
 
 /**
  * Derives branch candidates from note and changed-file topics.
  */
 private fun branchNameCandidates(request: AssistantRequest): List<String> {
-    val context = request.gitContext
+    val context = request.reasoningContext
     val candidates = mutableListOf<String>()
     request.options.userNote
         ?.toSlug()
@@ -117,7 +133,7 @@ private fun branchNameCandidates(request: AssistantRequest): List<String> {
  */
 private fun readableTopic(request: AssistantRequest): String =
     request.options.userNote
-        ?: primaryTopic(request.gitContext)
+        ?: primaryTopic(request.reasoningContext)
 
 /**
  * Finds the main topic represented by [context].
