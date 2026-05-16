@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -11,15 +12,17 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import dev.happs.aigitassistant.prompt.AssistantOptions
+import dev.happs.aigitassistant.prompt.AssistantRequestKind
 import dev.happs.aigitassistant.service.GitAssistantResult
 import dev.happs.aigitassistant.service.GitAssistantService
+import dev.happs.aigitassistant.ui.AssistantOptionsDialog
 import dev.happs.aigitassistant.ui.GitAssistantDialog
 
 /**
  * Base action that generates an assistant suggestion and opens it in an editable dialog.
  */
 abstract class AssistantRequestAction(
-    private val options: AssistantOptions,
+    private val requestKind: AssistantRequestKind,
     private val backgroundTitle: String,
     private val service: GitAssistantService = GitAssistantService(),
 ) : AnAction(),
@@ -46,6 +49,12 @@ abstract class AssistantRequestAction(
             return
         }
 
+        val optionsDialog = AssistantOptionsDialog(project, requestKind)
+        if (!optionsDialog.showAndGet()) {
+            return
+        }
+
+        val options = optionsDialog.selectedOptions()
         ProgressManager.getInstance().run(GenerationTask(project, backgroundTitle, options, service))
     }
 
@@ -57,7 +66,7 @@ abstract class AssistantRequestAction(
         title: String,
         private val options: AssistantOptions,
         private val service: GitAssistantService,
-    ) : Task.Backgroundable(project, title, false) {
+    ) : Task.Backgroundable(project, title, true) {
         private var generationResult: Result<GitAssistantResult>? = null
 
         /**
@@ -65,7 +74,13 @@ abstract class AssistantRequestAction(
          */
         override fun run(indicator: ProgressIndicator) {
             indicator.text = "Collecting Git context"
-            generationResult = runCatching { service.generate(project, options) }
+            generationResult =
+                runCatching { service.generate(project, options) }
+                    .onFailure { error ->
+                        if (error is ProcessCanceledException) {
+                            throw error
+                        }
+                    }
         }
 
         /**

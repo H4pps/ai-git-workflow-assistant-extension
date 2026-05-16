@@ -26,12 +26,6 @@ kotlin {
     jvmToolchain(21)
 }
 
-ktlint {
-    filter {
-        exclude("**/generated/**")
-    }
-}
-
 detekt {
     toolVersion = "2.0.0-alpha.3"
     buildUponDefaultConfig = true
@@ -53,6 +47,7 @@ kover {
         filters {
             excludes {
                 classes("dev.happs.aigitassistant.action.*")
+                classes("dev.happs.aigitassistant.ui.AssistantOptionsDialog")
             }
         }
         total {
@@ -76,10 +71,8 @@ intellijPlatform {
 //        name = "AI Git Workflow Assistant"
         version = project.version.toString()
         description =
-            """
-            AI Git Workflow Assistant is a small IntelliJ Platform plugin that will help developers
-            prepare Git changes with AI-assisted commit messages, branch names, and change summaries.
-            """.trimIndent()
+            "AI Git Workflow Assistant is a small IntelliJ Platform plugin that will help developers " +
+            "prepare Git changes with AI-assisted commit messages, branch names, and change summaries."
 
         ideaVersion {
             sinceBuild = "252"

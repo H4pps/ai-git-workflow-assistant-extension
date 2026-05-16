@@ -51,6 +51,28 @@ class GitContextCollectorTest {
     }
 
     @Test
+    fun `returns clean context for empty porcelain status`() {
+        val repository =
+            FakeGitRepositoryHandle(
+                rootPath = "/tmp/repo",
+                branchName = "main",
+                responses =
+                    mapOf(
+                        command(GitCommand.STATUS, "--porcelain=v1", "-z", "--branch", "--untracked-files=all") to
+                            success(""),
+                        command(GitCommand.DIFF, "--cached") to success(""),
+                        command(GitCommand.DIFF) to success(""),
+                    ),
+            )
+
+        val context = collector.collectFromRepository(repository)
+
+        assertEquals(GitContextState.CLEAN, context.state)
+        assertTrue(context.changedFilePaths.isEmpty())
+        assertTrue(context.untrackedFilePaths.isEmpty())
+    }
+
+    @Test
     fun `returns failed context when status command fails`() {
         val repository =
             FakeGitRepositoryHandle(
@@ -96,6 +118,28 @@ class GitContextCollectorTest {
         assertEquals(listOf("new-file.txt", "src/NewFile.kt"), context.untrackedFilePaths)
         assertEquals("", context.stagedDiff)
         assertEquals("", context.unstagedDiff)
+    }
+
+    @Test
+    fun `ignores blank status paths in porcelain output`() {
+        val repository =
+            FakeGitRepositoryHandle(
+                rootPath = "/tmp/repo",
+                branchName = "main",
+                responses =
+                    mapOf(
+                        command(GitCommand.STATUS, "--porcelain=v1", "-z", "--branch", "--untracked-files=all") to
+                            success("## main\u0000?? \u0000"),
+                        command(GitCommand.DIFF, "--cached") to success(""),
+                        command(GitCommand.DIFF) to success(""),
+                    ),
+            )
+
+        val context = collector.collectFromRepository(repository)
+
+        assertEquals(GitContextState.CLEAN, context.state)
+        assertTrue(context.changedFilePaths.isEmpty())
+        assertTrue(context.untrackedFilePaths.isEmpty())
     }
 
     @Test

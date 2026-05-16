@@ -1,10 +1,14 @@
 package dev.happs.aigitassistant.service
 
+import com.intellij.openapi.project.Project
 import dev.happs.aigitassistant.ai.client.AiResponseSource
 import dev.happs.aigitassistant.git.GitContext
+import dev.happs.aigitassistant.git.GitContextCollector
 import dev.happs.aigitassistant.git.GitContextState
+import dev.happs.aigitassistant.git.GitRepositoryResolver
 import dev.happs.aigitassistant.prompt.AssistantOptions
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
+import java.lang.reflect.Proxy
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -47,6 +51,43 @@ class GitAssistantServiceTest {
         )
     }
 
+    @Test
+    fun `generates display-ready change summary result`() {
+        val result =
+            service.generate(
+                context = changedContext(),
+                options = AssistantOptions(requestKind = AssistantRequestKind.CHANGE_SUMMARY),
+            )
+
+        assertEquals("Change Summary", result.title)
+        assertEquals(AssistantRequestKind.CHANGE_SUMMARY, result.requestKind)
+        assertTrue(result.generatedText.contains("Summary"))
+        assertTrue(result.generatedText.contains("Suggested tests"))
+    }
+
+    @Test
+    fun `collects context through project overload when repository is missing`() {
+        val collector =
+            GitContextCollector(
+                repositoryResolver =
+                    object : GitRepositoryResolver {
+                        override fun resolve(project: Project) = null
+                    },
+            )
+        val service = GitAssistantService(gitContextCollector = collector)
+
+        val result =
+            service.generate(
+                project = fakeProject(),
+                options = AssistantOptions(requestKind = AssistantRequestKind.CHANGE_SUMMARY),
+            )
+
+        assertEquals("Change Summary", result.title)
+        assertEquals(GitContextState.NO_REPOSITORY, result.gitState)
+        assertEquals(0, result.changedFileCount)
+        assertEquals(0, result.untrackedFileCount)
+    }
+
     private fun changedContext(): GitContext =
         GitContext(
             state = GitContextState.CHANGED,
@@ -59,4 +100,33 @@ class GitAssistantServiceTest {
             stagedDiffTruncated = false,
             unstagedDiffTruncated = false,
         )
+
+    private fun fakeProject(): Project =
+        Proxy
+            .newProxyInstance(
+                Project::class.java.classLoader,
+                arrayOf(Project::class.java),
+            ) { _, method, _ ->
+                when (method.name) {
+                    "isDisposed" -> false
+                    "isOpen" -> true
+                    "getName" -> "fake-project"
+                    "getBasePath" -> null
+                    "toString" -> "FakeProject"
+                    else -> defaultValue(method.returnType)
+                }
+            } as Project
+
+    private fun defaultValue(returnType: Class<*>): Any? =
+        when (returnType) {
+            Boolean::class.javaPrimitiveType -> false
+            Int::class.javaPrimitiveType -> 0
+            Long::class.javaPrimitiveType -> 0L
+            Float::class.javaPrimitiveType -> 0f
+            Double::class.javaPrimitiveType -> 0.0
+            Short::class.javaPrimitiveType -> 0.toShort()
+            Byte::class.javaPrimitiveType -> 0.toByte()
+            Char::class.javaPrimitiveType -> 0.toChar()
+            else -> null
+        }
 }

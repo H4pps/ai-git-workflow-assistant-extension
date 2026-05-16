@@ -6,16 +6,18 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>Git4Idea</depends>
 
+    <resource-bundle>messages.AiGitWorkflowAssistantBundle</resource-bundle>
+
     <actions>
         <group id="AiGitWorkflowAssistant.Group"
-               text="AI Git Workflow Assistant"
-               description="AI-assisted Git workflow tools"
                popup="true">
             <add-to-group group-id="Vcs.Operations.Popup" anchor="last"/>
-            <action id="AiGitWorkflowAssistant.ShowPlaceholder"
-                    class="dev.happs.aigitassistant.action.ShowAssistantPlaceholderAction"
-                    text="Open Assistant"
-                    description="Open the AI Git Workflow Assistant placeholder"/>
+            <action id="AiGitWorkflowAssistant.GenerateCommitMessage"
+                    class="dev.happs.aigitassistant.action.GenerateCommitMessageAction"/>
+            <action id="AiGitWorkflowAssistant.SuggestBranchName"
+                    class="dev.happs.aigitassistant.action.SuggestBranchNameAction"/>
+            <action id="AiGitWorkflowAssistant.SummarizeChanges"
+                    class="dev.happs.aigitassistant.action.SummarizeChangesAction"/>
         </group>
     </actions>
 </idea-plugin>

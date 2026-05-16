@@ -1,6 +1,5 @@
 package dev.happs.aigitassistant.action
 
-import dev.happs.aigitassistant.prompt.AssistantOptions
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
 
 /**
@@ -8,6 +7,6 @@ import dev.happs.aigitassistant.prompt.AssistantRequestKind
  */
 class SuggestBranchNameAction :
     AssistantRequestAction(
-        options = AssistantOptions(requestKind = AssistantRequestKind.BRANCH_NAME),
+        requestKind = AssistantRequestKind.BRANCH_NAME,
         backgroundTitle = "Suggesting Branch Names",
     )
