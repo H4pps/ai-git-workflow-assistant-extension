@@ -7,6 +7,17 @@ import kotlin.test.assertTrue
 
 class GitDiffLimitTest {
     @Test
+    fun `default limit keeps prompt input compact`() {
+        val limit = GitDiffLimit()
+
+        val result = limit.apply("x".repeat(4_001))
+
+        assertEquals(4_000 + "\n...[truncated 1 chars]".length, result.text.length)
+        assertTrue(result.truncated)
+        assertEquals(4_001, result.originalLength)
+    }
+
+    @Test
     fun `returns original diff when within limit`() {
         val limit = GitDiffLimit(maxPrefixCharacters = 10)
 

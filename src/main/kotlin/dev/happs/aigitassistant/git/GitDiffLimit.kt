@@ -1,10 +1,12 @@
 package dev.happs.aigitassistant.git
 
+const val DEFAULT_DIFF_PREFIX_CHARACTERS = 4_000
+
 /**
  * Applies a deterministic kept-prefix limit to Git diff text.
  */
 data class GitDiffLimit(
-    val maxPrefixCharacters: Int = 12_000,
+    val maxPrefixCharacters: Int = DEFAULT_DIFF_PREFIX_CHARACTERS,
 ) {
     init {
         require(maxPrefixCharacters >= 0) { "maxPrefixCharacters must be non-negative." }

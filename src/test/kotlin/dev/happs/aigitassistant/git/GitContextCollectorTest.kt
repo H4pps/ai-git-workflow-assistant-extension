@@ -165,6 +165,38 @@ class GitContextCollectorTest {
     }
 
     @Test
+    fun `collects staged paths separately from unstaged and untracked paths`() {
+        val repository =
+            FakeGitRepositoryHandle(
+                rootPath = "/tmp/repo",
+                branchName = "feature/staged-only",
+                responses =
+                    mapOf(
+                        command(GitCommand.STATUS, "--porcelain=v1", "-z", "--branch", "--untracked-files=all") to
+                            success(
+                                "## feature/staged-only\u0000" +
+                                    "M  src/Staged.kt\u0000" +
+                                    " M src/Unstaged.kt\u0000" +
+                                    "MM src/Both.kt\u0000" +
+                                    "A  src/New.kt\u0000" +
+                                    "?? docs/notes.md\u0000",
+                            ),
+                        command(GitCommand.DIFF, "--cached") to success("staged"),
+                        command(GitCommand.DIFF) to success("unstaged"),
+                    ),
+            )
+
+        val context = collector.collectFromRepository(repository)
+
+        assertEquals(
+            listOf("src/Staged.kt", "src/Unstaged.kt", "src/Both.kt", "src/New.kt", "docs/notes.md"),
+            context.changedFilePaths,
+        )
+        assertEquals(listOf("src/Staged.kt", "src/Both.kt", "src/New.kt"), context.stagedFilePaths)
+        assertEquals(listOf("docs/notes.md"), context.untrackedFilePaths)
+    }
+
+    @Test
     fun `truncates staged and unstaged diffs using configured limit`() {
         val repository =
             FakeGitRepositoryHandle(

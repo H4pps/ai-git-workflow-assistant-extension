@@ -52,10 +52,11 @@ class GitContextCollector(
      */
     private fun parseStatusPorcelain(output: String): ParsedStatus {
         if (output.isEmpty()) {
-            return ParsedStatus(emptyList(), emptyList())
+            return ParsedStatus(emptyList(), emptyList(), emptyList())
         }
 
         val changedPaths = LinkedHashSet<String>()
+        val stagedPaths = LinkedHashSet<String>()
         val untrackedPaths = LinkedHashSet<String>()
         val entries = output.split(STATUS_SEPARATOR)
 
@@ -66,6 +67,10 @@ class GitContextCollector(
                 val status = entry.substring(0, 2)
                 val firstPath = entry.substring(3)
                 addPathIfPresent(changedPaths, firstPath)
+                val indexStatus = status.firstOrNull()
+                if (indexStatus != null && indexStatus != ' ' && indexStatus != '?') {
+                    addPathIfPresent(stagedPaths, firstPath)
+                }
                 if (status == UNTRACKED_STATUS) {
                     addPathIfPresent(untrackedPaths, firstPath)
                 }
@@ -78,6 +83,7 @@ class GitContextCollector(
 
         return ParsedStatus(
             changedPaths = changedPaths.toList(),
+            stagedPaths = stagedPaths.toList(),
             untrackedPaths = untrackedPaths.toList(),
         )
     }
@@ -124,6 +130,7 @@ class GitContextCollector(
                 repositoryRoot = repository.rootPath,
                 branchName = repository.branchName,
                 changedFilePaths = parsedStatus.changedPaths,
+                stagedFilePaths = parsedStatus.stagedPaths,
                 untrackedFilePaths = parsedStatus.untrackedPaths,
                 stagedDiff = stagedDiff.text,
                 unstagedDiff = unstagedDiff.text,
@@ -253,6 +260,7 @@ class GitContextCollector(
 
     private data class ParsedStatus(
         val changedPaths: List<String>,
+        val stagedPaths: List<String>,
         val untrackedPaths: List<String>,
     )
 

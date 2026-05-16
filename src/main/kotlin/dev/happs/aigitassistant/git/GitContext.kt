@@ -8,6 +8,7 @@ data class GitContext(
     val repositoryRoot: String?,
     val branchName: String?,
     val changedFilePaths: List<String>,
+    val stagedFilePaths: List<String> = changedFilePaths,
     val untrackedFilePaths: List<String>,
     val stagedDiff: String,
     val unstagedDiff: String,
