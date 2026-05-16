@@ -21,14 +21,14 @@ class AiProviderSettingsServiceTest {
         service.updateSettings(
             AiProviderSettings(
                 openAiBaseUrl = " https://llm.example.com/v1/ ",
-                openAiModel = " gpt-4o-mini ",
+                openAiModel = " gpt-5-nano ",
             ),
         )
 
         service.storeApiKey("  sk-example-key  ")
 
         assertEquals("https://llm.example.com/v1", service.settings().openAiBaseUrl)
-        assertEquals("gpt-4o-mini", service.settings().openAiModel)
+        assertEquals("gpt-5-nano", service.settings().openAiModel)
         assertEquals("sk-example-key", service.apiKeyOrNull())
         assertEquals("sk-example-key", credentialStore.savedApiKey)
     }
