@@ -47,7 +47,7 @@ kover {
         filters {
             excludes {
                 classes("dev.happs.aigitassistant.action.*")
-                classes("dev.happs.aigitassistant.ui.AssistantOptionsDialog")
+                classes("dev.happs.aigitassistant.ui.GitAssistantToolWindowFactory")
             }
         }
         total {

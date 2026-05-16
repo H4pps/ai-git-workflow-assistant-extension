@@ -3,28 +3,18 @@ package dev.happs.aigitassistant.action
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.progress.ProcessCanceledException
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import dev.happs.aigitassistant.prompt.AssistantOptions
+import com.intellij.openapi.wm.ToolWindowManager
 import dev.happs.aigitassistant.prompt.AssistantRequestKind
-import dev.happs.aigitassistant.service.GitAssistantResult
-import dev.happs.aigitassistant.service.GitAssistantService
-import dev.happs.aigitassistant.ui.AssistantOptionsDialog
-import dev.happs.aigitassistant.ui.GitAssistantDialog
+import dev.happs.aigitassistant.service.GitAssistantToolWindowService
+import dev.happs.aigitassistant.ui.GitAssistantToolWindowFactory
 
 /**
- * Base action that generates an assistant suggestion and opens it in an editable dialog.
+ * Base action that focuses the assistant tool window and preselects a request kind.
  */
 abstract class AssistantRequestAction(
     private val requestKind: AssistantRequestKind,
-    private val backgroundTitle: String,
-    private val service: GitAssistantService = GitAssistantService(),
 ) : AnAction(),
     DumbAware {
     /**
@@ -39,9 +29,6 @@ abstract class AssistantRequestAction(
      */
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
-    /**
-     * Runs generation in the background and opens an editable result dialog.
-     */
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project
         if (project == null) {
@@ -49,57 +36,19 @@ abstract class AssistantRequestAction(
             return
         }
 
-        val optionsDialog = AssistantOptionsDialog(project, requestKind)
-        if (!optionsDialog.showAndGet()) {
+        project.getService(GitAssistantToolWindowService::class.java).requestKindSelection(requestKind)
+        val toolWindow =
+            ToolWindowManager
+                .getInstance(project)
+                .getToolWindow(GitAssistantToolWindowFactory.TOOL_WINDOW_ID)
+        if (toolWindow == null) {
+            Messages.showErrorDialog(
+                project,
+                "Could not open the AI Git tool window.",
+                "AI Git Workflow Assistant",
+            )
             return
         }
-
-        val options = optionsDialog.selectedOptions()
-        ProgressManager.getInstance().run(GenerationTask(project, backgroundTitle, options, service))
-    }
-
-    /**
-     * Background task for Git collection and deterministic generation.
-     */
-    private class GenerationTask(
-        project: Project,
-        title: String,
-        private val options: AssistantOptions,
-        private val service: GitAssistantService,
-    ) : Task.Backgroundable(project, title, true) {
-        private var generationResult: Result<GitAssistantResult>? = null
-
-        /**
-         * Generates the suggestion away from the UI thread.
-         */
-        override fun run(indicator: ProgressIndicator) {
-            indicator.text = "Collecting Git context"
-            generationResult =
-                runCatching { service.generate(project, options) }
-                    .onFailure { error ->
-                        if (error is ProcessCanceledException) {
-                            throw error
-                        }
-                    }
-        }
-
-        /**
-         * Shows the generated result or a clear error message.
-         */
-        override fun onSuccess() {
-            val result = generationResult ?: return
-            ApplicationManager.getApplication().invokeLater {
-                result.fold(
-                    onSuccess = { GitAssistantDialog(project, it).show() },
-                    onFailure = { error ->
-                        Messages.showErrorDialog(
-                            project,
-                            error.message ?: "Could not generate assistant output.",
-                            "AI Git Workflow Assistant",
-                        )
-                    },
-                )
-            }
-        }
+        toolWindow.activate(null, true)
     }
 }

@@ -8,5 +8,4 @@ import dev.happs.aigitassistant.prompt.AssistantRequestKind
 class SummarizeChangesAction :
     AssistantRequestAction(
         requestKind = AssistantRequestKind.CHANGE_SUMMARY,
-        backgroundTitle = "Summarizing Changes",
     )

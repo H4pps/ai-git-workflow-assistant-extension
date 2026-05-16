@@ -8,6 +8,13 @@
 
     <resource-bundle>messages.AiGitWorkflowAssistantBundle</resource-bundle>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="dev.happs.aigitassistant.service.GitAssistantToolWindowService"/>
+        <toolWindow id="AI Git"
+                    anchor="right"
+                    factoryClass="dev.happs.aigitassistant.ui.GitAssistantToolWindowFactory"/>
+    </extensions>
+
     <actions>
         <group id="AiGitWorkflowAssistant.Group"
                popup="true">

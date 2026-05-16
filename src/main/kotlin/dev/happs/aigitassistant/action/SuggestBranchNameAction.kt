@@ -8,5 +8,4 @@ import dev.happs.aigitassistant.prompt.AssistantRequestKind
 class SuggestBranchNameAction :
     AssistantRequestAction(
         requestKind = AssistantRequestKind.BRANCH_NAME,
-        backgroundTitle = "Suggesting Branch Names",
     )

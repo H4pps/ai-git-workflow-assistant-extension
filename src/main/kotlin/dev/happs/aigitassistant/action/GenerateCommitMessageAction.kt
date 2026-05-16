@@ -8,5 +8,4 @@ import dev.happs.aigitassistant.prompt.AssistantRequestKind
 class GenerateCommitMessageAction :
     AssistantRequestAction(
         requestKind = AssistantRequestKind.COMMIT_MESSAGE,
-        backgroundTitle = "Generating Commit Message",
     )
