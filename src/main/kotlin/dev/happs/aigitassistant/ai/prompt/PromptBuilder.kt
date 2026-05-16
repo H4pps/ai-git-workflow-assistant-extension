@@ -1,6 +1,7 @@
-package dev.happs.aigitassistant.prompt
+package dev.happs.aigitassistant.ai.prompt
 
 import dev.happs.aigitassistant.git.GitContext
+import dev.happs.aigitassistant.git.GitContextState
 
 /**
  * Builds assistant requests from Git context and user options.
@@ -13,31 +14,34 @@ class PromptBuilder {
         context: GitContext,
         options: AssistantOptions,
     ): AssistantRequest {
+        val reasoningContext = context.reasoningContextFor(options)
         val metadata =
             AssistantRequestSafeMetadata(
-                contextState = context.state,
-                repositoryPresent = context.repositoryRoot != null,
-                branchPresent = context.branchName != null,
-                changedFileCount = context.changedFilePaths.size,
-                untrackedFileCount = context.untrackedFilePaths.size,
-                stagedDiffCharCount = context.stagedDiff.length,
-                unstagedDiffCharCount = context.unstagedDiff.length,
-                stagedDiffTruncated = context.stagedDiffTruncated,
-                unstagedDiffTruncated = context.unstagedDiffTruncated,
+                contextState = reasoningContext.state,
+                repositoryPresent = reasoningContext.repositoryRoot != null,
+                branchPresent = reasoningContext.branchName != null,
+                changedFileCount = reasoningContext.changedFilePaths.size,
+                untrackedFileCount = reasoningContext.untrackedFilePaths.size,
+                stagedDiffCharCount = reasoningContext.stagedDiff.length,
+                unstagedDiffCharCount = reasoningContext.unstagedDiff.length,
+                stagedDiffTruncated = reasoningContext.stagedDiffTruncated,
+                unstagedDiffTruncated = reasoningContext.unstagedDiffTruncated,
                 hasUserNote = options.userNote != null,
                 userNoteCharCount = options.userNote?.length ?: 0,
                 branchSuggestionCount = options.branchSuggestionCount,
                 requestKind = options.requestKind,
                 commitMessageStyle = options.commitMessageStyle,
-                errorCode = context.errorCode,
+                stagedOnly = options.stagedOnly,
+                errorCode = reasoningContext.errorCode,
             )
 
         return AssistantRequest(
             kind = options.requestKind,
             options = options,
-            promptText = buildPromptText(context, options),
+            promptText = buildPromptText(reasoningContext, options),
             gitContext = context,
             safeMetadata = metadata,
+            reasoningContext = reasoningContext,
         )
     }
 
@@ -51,8 +55,8 @@ class PromptBuilder {
             appendLine("commit_message_style=${options.commitMessageStyle.name}")
             appendLine("branch_suggestion_count=${options.branchSuggestionCount}")
 
-            appendSection("OUTPUT_INSTRUCTIONS")
-            appendInstructions(options)
+            appendSection("INPUT_SCOPE")
+            appendInputScope(options)
 
             appendSection("STATE")
             appendLine("state=${context.state.name}")
@@ -61,6 +65,9 @@ class PromptBuilder {
 
             appendSection("BRANCH")
             appendLine("name=${context.branchName ?: "(none)"}")
+
+            appendSection("USER_NOTE")
+            appendLine(options.userNote ?: "(none)")
 
             appendSection("CHANGED_FILES")
             appendList(context.changedFilePaths)
@@ -77,9 +84,6 @@ class PromptBuilder {
             appendSection("TRUNCATION_NOTES")
             appendLine("staged_diff_truncated=${context.stagedDiffTruncated}")
             appendLine("unstaged_diff_truncated=${context.unstagedDiffTruncated}")
-
-            appendSection("USER_NOTE")
-            appendLine(options.userNote ?: "(none)")
         }
 
     private fun StringBuilder.appendSection(label: String) {
@@ -94,25 +98,40 @@ class PromptBuilder {
             appendLine("- (none)")
             return
         }
-        paths.forEach { path ->
+        paths.take(MAX_RENDERED_PATHS).forEach { path ->
             appendLine("- $path")
+        }
+        val omittedCount = paths.size - MAX_RENDERED_PATHS
+        if (omittedCount > 0) {
+            appendLine("...[omitted $omittedCount paths]")
         }
     }
 
-    private fun StringBuilder.appendInstructions(options: AssistantOptions) {
-        when (options.requestKind) {
-            AssistantRequestKind.COMMIT_MESSAGE -> {
-                appendLine("Generate an editable Git commit message.")
-                appendLine("Use the selected commit message style: ${options.commitMessageStyle.name}.")
-            }
-            AssistantRequestKind.BRANCH_NAME -> {
-                appendLine("Suggest ${options.branchSuggestionCount} branch names.")
-                appendLine("Use bare lowercase kebab-case names without a type prefix.")
-            }
-            AssistantRequestKind.CHANGE_SUMMARY -> {
-                appendLine("Summarize behavior changes, risks, and suggested tests.")
-                appendLine("Use the sections: Summary, Risks, Suggested tests.")
-            }
+    private fun StringBuilder.appendInputScope(options: AssistantOptions) {
+        appendLine("reasoning_scope=${if (options.stagedOnly) "STAGED_ONLY" else "ALL_CHANGES"}")
+        if (options.stagedOnly) {
+            appendLine("Use only staged files and the staged diff.")
+            appendLine("Ignore unstaged and untracked changes.")
+        } else {
+            appendLine("Use staged, unstaged, and untracked changes.")
         }
+    }
+
+    private fun GitContext.reasoningContextFor(options: AssistantOptions): GitContext {
+        if (!options.stagedOnly) {
+            return this
+        }
+        val hasStagedChanges = stagedFilePaths.isNotEmpty() || stagedDiff.isNotBlank()
+        return copy(
+            state = if (state == GitContextState.CHANGED && !hasStagedChanges) GitContextState.CLEAN else state,
+            changedFilePaths = stagedFilePaths,
+            untrackedFilePaths = emptyList(),
+            unstagedDiff = "",
+            unstagedDiffTruncated = false,
+        )
+    }
+
+    private companion object {
+        const val MAX_RENDERED_PATHS = 50
     }
 }

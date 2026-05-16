@@ -1,4 +1,4 @@
-package dev.happs.aigitassistant.prompt
+package dev.happs.aigitassistant.ai.prompt
 
 import dev.happs.aigitassistant.git.GitContext
 import dev.happs.aigitassistant.git.GitContextState
@@ -12,6 +12,7 @@ data class AssistantRequest(
     val promptText: String,
     val gitContext: GitContext,
     val safeMetadata: AssistantRequestSafeMetadata,
+    val reasoningContext: GitContext = gitContext,
 )
 
 /**
@@ -32,6 +33,7 @@ data class AssistantRequestSafeMetadata(
     val branchSuggestionCount: Int,
     val requestKind: AssistantRequestKind,
     val commitMessageStyle: CommitMessageStyle,
+    val stagedOnly: Boolean,
     val errorCode: String?,
 ) {
     /**
@@ -53,6 +55,7 @@ data class AssistantRequestSafeMetadata(
             "branch_suggestion_count" to branchSuggestionCount,
             "request_kind" to requestKind.name,
             "commit_message_style" to commitMessageStyle.name,
+            "staged_only" to stagedOnly,
             "error_code" to errorCode,
         )
 }

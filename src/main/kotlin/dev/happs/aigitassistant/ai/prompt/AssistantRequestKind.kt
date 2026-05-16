@@ -1,4 +1,4 @@
-package dev.happs.aigitassistant.prompt
+package dev.happs.aigitassistant.ai.prompt
 
 /**
  * Supported assistant request categories.

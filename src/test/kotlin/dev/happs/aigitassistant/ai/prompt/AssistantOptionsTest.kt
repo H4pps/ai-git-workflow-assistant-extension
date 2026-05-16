@@ -1,4 +1,4 @@
-package dev.happs.aigitassistant.prompt
+package dev.happs.aigitassistant.ai.prompt
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,6 +12,7 @@ class AssistantOptionsTest {
 
         assertEquals(CommitMessageStyle.CONVENTIONAL_COMMIT, options.commitMessageStyle)
         assertEquals(3, options.branchSuggestionCount)
+        assertEquals(false, options.stagedOnly)
     }
 
     @Test
